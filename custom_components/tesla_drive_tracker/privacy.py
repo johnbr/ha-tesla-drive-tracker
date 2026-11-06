@@ -1,8 +1,9 @@
 """Keep a hidden destination out of everything the integration publishes.
 
 Redaction happens here rather than in a card, so one rule covers entities, events
-and the websocket. It fails hidden: anything but a clean ``off`` counts as hidden,
-because a destination shown by mistake can't be taken back.
+and the websocket. A new car starts with the destination shown. Once a state has
+been saved it fails hidden: anything but a clean ``off`` counts as hidden, because
+a destination shown by mistake can't be taken back.
 
 Arrival time stays visible while hidden. When isn't where, and an automation can
 still say someone is five minutes away. Distance and the route line stay hidden,

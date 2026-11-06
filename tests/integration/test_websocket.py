@@ -63,6 +63,7 @@ async def test_a_hidden_car_sends_no_destination_at_all(
     car: Car, hass: HomeAssistant, hass_ws_client
 ) -> None:
     await car.start()
+    await car.coordinator.async_set_hidden(True)
     await car.report("speed", "40")
     await car.report("destination", "Cafe", PLACE)
     client, _ = await subscribe(hass_ws_client, hass, car.entry.entry_id)

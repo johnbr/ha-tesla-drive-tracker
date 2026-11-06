@@ -56,9 +56,8 @@ Home Assistant or an https URL.
 
 ## Privacy
 
-**Hide destination starts on, so a new install shows no destination until you turn
-it off.** Anything but a clean `off` counts as hidden, because a destination shown
-by mistake can't be taken back.
+**Hide destination starts off**, so a new install shows the destination. Turn it on
+to hide it, and it stays on across restarts.
 
 While hidden, the integration publishes no destination, distance, route line or
 heading home, so the card never receives them. Arrival time stays, because when isn't where.
