@@ -1,8 +1,8 @@
 """Decode RouteLine payloads.
 
 ``METRICS_ONLY`` was sent by a real parked car and holds only a float. The
-geometry payloads are built here from the reported format, which a real drive
-has yet to confirm. Their points are invented.
+geometry payloads follow the shape real routes arrive in, with invented points,
+because a real route would show where the car has been.
 """
 from __future__ import annotations
 
@@ -12,6 +12,8 @@ import pytest
 from tesla_drive_tracker_isolated.route_line import decode_polyline, parse_route_line
 
 METRICS_ONLY = "EgUNvXH8Pw=="
+# Field 2 again, with the flag real routes carry on their latest length.
+FLAGGED_LENGTH = bytes.fromhex("12070dbd71fc3f1001")
 POINTS = ((10.1, 20.1), (10.100123, 20.100456), (10.2, -20.3))
 
 
@@ -47,7 +49,7 @@ def payload(polyline: str, *, metrics: bool = True) -> str:
     text = polyline.encode()
     data = b"\x0a" + varint(len(text)) + text
     if metrics:
-        data += base64.b64decode(METRICS_ONLY)
+        data += base64.b64decode(METRICS_ONLY) + FLAGGED_LENGTH
     return base64.b64encode(data).decode()
 
 
