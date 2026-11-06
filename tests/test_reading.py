@@ -3,7 +3,11 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-from tesla_drive_tracker_isolated.reading import build_reading, minutes_until
+from tesla_drive_tracker_isolated.reading import (
+    build_reading,
+    minutes_until,
+    stream_silent,
+)
 from tesla_drive_tracker_isolated.sources import (
     ROLE_ARRIVAL,
     ROLE_CHARGING,
@@ -61,3 +65,23 @@ def test_a_passed_arrival_is_no_arrival() -> None:
     arrival = (NOW - timedelta(minutes=1)).isoformat()
     assert minutes_until(arrival, NOW.timestamp()) is None
     assert minutes_until("soon", NOW.timestamp()) is None
+
+
+def test_a_travel_time_sensor_gives_plain_minutes() -> None:
+    assert minutes_until("14.5", 0) == 14.5
+    assert minutes_until("0", 0) is None
+
+
+def test_a_moving_car_that_stops_reporting_is_silent() -> None:
+    assert not stream_silent("60", 1000.0, "D", 900.0, 1100.0)
+    assert stream_silent("60", 1000.0, "D", 900.0, 1121.0)
+
+
+def test_a_car_stopped_in_gear_gets_a_long_time() -> None:
+    assert not stream_silent("0", 1000.0, "D", 900.0, 2700.0)
+    assert stream_silent("0", 1000.0, "D", 900.0, 2801.0)
+
+
+def test_a_parked_car_is_never_silent() -> None:
+    assert not stream_silent("0", 1000.0, "P", 900.0, 900000.0)
+    assert not stream_silent(None, None, None, None, 900000.0)

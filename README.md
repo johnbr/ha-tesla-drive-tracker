@@ -5,28 +5,50 @@ drive live on a map: the car pointing the way it's going, the real route line, t
 destination, ETA, distance left and battery at arrival. It will also give
 automations a clean set of hooks for trips and arrivals.
 
-> **This integration isn't usable yet.** It has no config flow, entities or card,
-> so installing it does nothing. There are no releases.
+> **This integration is still being built.** The backend works: it adds a car,
+> follows its drives and publishes the entities below. The card and the automation
+> hooks are still to come, and there are no releases yet.
 
-## Status
+## What it adds
 
-Written and tested so far, none of it needing Home Assistant:
+For each car, using entities your Tesla integrations already provide:
 
-* The trip engine, which decides when a drive starts and ends and when the car is
-  arriving
-* Destination pairing, which only trusts coordinates that belong to the destination
-  name on screen, because the car can send a new name without its location
-* The `RouteLine` decoder
-* Source selection across the Tesla integrations a car can report through
-* Destination privacy: a hidden destination is redacted at the source
+| Entity | What it shows |
+|---|---|
+| Drive state | `parked`, `driving`, `navigating`, `arriving`, `charging` or `offline` |
+| Driving, Heading home | Whether the car is on a drive, and whether that drive is going home |
+| Destination (sensor and tracker) | The name, and a position only when it belongs to that name |
+| ETA, Time remaining, Distance remaining | For the current route |
+| Arrival battery, Traffic delay | When your car reports them |
+| Trip distance, Trip duration | The current trip, held after it ends |
+| Hide destination | See below |
 
-Still to come: the config flow, entities, websocket API and card.
+A destination, its ETA and the other route figures appear only during a drive. The
+car can set navigation home by itself while parked, which isn't a trip.
+
+Every source can be replaced in the integration's options, for example pointing
+the arrival time at a travel time sensor.
+
+## Privacy
+
+**Hide destination starts on, so a new install shows no destination until you turn
+it off.** Anything but a clean `off` counts as hidden, because a destination shown
+by mistake can't be taken back.
+
+While hidden, the integration publishes no destination, distance, route line or
+heading home. Arrival time stays, because when isn't where.
+
+This is display privacy, not access control. Anyone logged in to Home Assistant can
+still read the source entities.
 
 ## Requirements
 
 * Home Assistant 2026.10.0 or later
-* [Tesla Fleet Telemetry](https://github.com/johnbr/ha-tesla-fleet-telemetry) 0.15.0
-  or later for the route line, with `RouteLine` added from its signal catalog
+* [Tesla Fleet Telemetry](https://github.com/johnbr/ha-tesla-fleet-telemetry) or the
+  core [Tesla Fleet](https://www.home-assistant.io/integrations/tesla_fleet/)
+  integration, or both
+* For the route line: Tesla Fleet Telemetry 0.15.0 or later, with `RouteLine` added
+  from its signal catalog
 
 ## License
 

@@ -6,6 +6,8 @@ Fixtures in this repo must never hold a real home or a real destination.
 from __future__ import annotations
 
 from tesla_drive_tracker_isolated.engine import (
+    STATE_DRIVING,
+    STATE_OFFLINE,
     Reading,
     TripEngine,
     driving_evidence,
@@ -247,3 +249,24 @@ def test_offline_and_charging_states() -> None:
     assert engine.state == "charging"
     engine.update(Reading(10, speed=0.0, gear="P", online=False))
     assert engine.state == "offline"
+
+
+def test_a_driving_car_is_never_offline() -> None:
+    engine = TripEngine()
+    engine.update(Reading(0, speed=40, online=False))
+    assert engine.state == STATE_DRIVING
+
+
+def test_a_parked_car_can_be_offline() -> None:
+    engine = TripEngine()
+    engine.update(Reading(0, speed=0, gear="P", online=False))
+    assert engine.state == STATE_OFFLINE
+
+
+def test_a_new_route_cannot_arrive_until_it_has_held() -> None:
+    engine = TripEngine()
+    engine.update(Reading(0, speed=40, destination="Cafe", minutes_to_arrival=7))
+    events = engine.update(
+        Reading(30, speed=40, destination="Cafe", minutes_to_arrival=4)
+    )
+    assert events == []

@@ -1,0 +1,56 @@
+{
+  "entity": {
+    "binary_sensor": {
+      "heading_home": {
+        "default": "mdi:home-export-outline"
+      }
+    },
+    "device_tracker": {
+      "destination": {
+        "default": "mdi:map-marker"
+      }
+    },
+    "sensor": {
+      "drive_state": {
+        "default": "mdi:car",
+        "state": {
+          "parked": "mdi:parking",
+          "driving": "mdi:car-side",
+          "navigating": "mdi:navigation-variant",
+          "arriving": "mdi:map-marker-check",
+          "charging": "mdi:ev-station",
+          "offline": "mdi:cloud-off-outline"
+        }
+      },
+      "destination": {
+        "default": "mdi:map-marker-outline"
+      },
+      "eta": {
+        "default": "mdi:clock-end"
+      },
+      "time_remaining": {
+        "default": "mdi:timer-sand"
+      },
+      "distance_remaining": {
+        "default": "mdi:map-marker-distance"
+      },
+      "traffic_delay": {
+        "default": "mdi:car-multiple"
+      },
+      "trip_distance": {
+        "default": "mdi:map-marker-path"
+      },
+      "trip_duration": {
+        "default": "mdi:timer-outline"
+      }
+    },
+    "switch": {
+      "hide_destination": {
+        "default": "mdi:eye-off",
+        "state": {
+          "off": "mdi:eye"
+        }
+      }
+    }
+  }
+}

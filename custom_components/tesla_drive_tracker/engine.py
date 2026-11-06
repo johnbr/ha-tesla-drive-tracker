@@ -309,12 +309,19 @@ class TripEngine:
                 )
 
     @property
+    def route(self) -> str:
+        """The name of the route being reported, or ``""``."""
+        return self._route
+
+    @property
     def state(self) -> str:
         """The drive state of the last reading."""
         last = self._last
-        if last is None or not last.online:
+        if last is None:
             return STATE_OFFLINE
         if not self.driving:
+            if not last.online:
+                return STATE_OFFLINE
             return STATE_CHARGING if last.charging else STATE_PARKED
         if not self._route or not self._route_stable(last):
             return STATE_DRIVING
