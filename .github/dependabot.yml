@@ -8,6 +8,12 @@ updates:
       prefix: chore
     cooldown:
       default-days: 7
+    ignore:
+      # TypeScript 7 has no JavaScript compiler API, which
+      # @rollup/plugin-typescript needs, so `npm run build` crashes on load.
+      # Lift this when the plugin supports it.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
