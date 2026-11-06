@@ -144,6 +144,7 @@ def test_each_threshold_fires_once() -> None:
 def test_drive_ends_with_a_summary() -> None:
     engine = TripEngine()
     engine.update(Reading(0, odometer=1000.0, battery=80.0, at_home=True, **MOVING))
+    engine.update(Reading(1800, odometer=1030.0, battery=70.0, **MOVING))
     engine.update(Reading(3600, odometer=1060.0, battery=60.0, **MOVING))
     ended = []
     for now in range(3610, 3800, 10):
@@ -158,6 +159,17 @@ def test_drive_ends_with_a_summary() -> None:
     assert engine.trip is None
 
 
+def test_car_sleeping_right_after_parking_still_ends_the_drive() -> None:
+    """Speed and gear both go unknown within three minutes of parking on about
+    a quarter of real drives, and the car then stays silent for hours."""
+    engine = TripEngine()
+    feed(engine, 0, 60, **MOVING)
+    assert feed(engine, 60, 120, **PARKED) == []
+    assert feed(engine, 120, 260) == ["drive_ended"]
+    assert engine.trip is None
+    assert not engine.driving
+
+
 def test_stream_drop_is_not_parking() -> None:
     engine = TripEngine()
     feed(engine, 0, 60, **MOVING)
@@ -165,6 +177,15 @@ def test_stream_drop_is_not_parking() -> None:
     assert engine.driving
     assert feed(engine, 900, 960, **MOVING) == []
     assert engine.trip is not None
+
+
+def test_a_trip_silent_for_half_an_hour_is_dropped() -> None:
+    """The stream died at speed and the car slept, so nothing says it parked."""
+    engine = TripEngine()
+    feed(engine, 0, 60, **MOVING)
+    assert feed(engine, 60, 2000) == []
+    assert engine.trip is None
+    assert not engine.driving
 
 
 def test_stream_drop_then_parked_ends_after_the_full_delay() -> None:

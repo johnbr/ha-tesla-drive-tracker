@@ -16,7 +16,13 @@ specific ways:
 
 ``None`` in a ``Reading`` means the value is unknown or stale, which is different
 from a car reporting zero. A stream drop therefore pauses the engine rather than
-looking like a parked car. Restored values must arrive here as ``None``.
+looking like a parked car, and a trip that stays silent for 30 minutes is dropped
+without an event. Silence after the car has stopped is the car going to sleep, so
+that keeps counting towards the end of the trip. Restored values must arrive here
+as ``None``.
+
+``update`` must also be called on a timer, because a parked car sends nothing and
+the delays below only advance when a reading arrives.
 
 This module imports nothing from Home Assistant, so a recorded drive can be
 replayed through it directly.
@@ -35,7 +41,7 @@ MOVING_GEARS = frozenset({"D", "R", "N"})
 DRIVING_OFF_SECONDS = 60
 TRIP_END_SECONDS = 180
 ROUTE_STABLE_SECONDS = 120
-RESTORED_TRIP_MAX_SECONDS = 1800
+SILENT_TRIP_MAX_SECONDS = 1800
 
 # How far above a threshold the previous reading may be and still count as an
 # approach. A real approach steps down through it, and a replay jumps in from
@@ -124,7 +130,7 @@ class TripEngine:
         self.thresholds = tuple(sorted(thresholds, reverse=True))
         self.driving = False
         self.trip: Trip | None = None
-        self._last_driving_at: float | None = None
+        self._last_evidence_at: float | None = None
         self._idle_since: float | None = None
         self._route = ""
         self._route_since = 0.0
@@ -134,13 +140,15 @@ class TripEngine:
     def update(self, reading: Reading) -> list[DriveEvent]:
         """Take one reading and return the events it caused."""
         events: list[DriveEvent] = []
-        self._expire_restored_trip(reading)
+        self._expire_silent_trip(reading)
         route_changed = self._track_route(reading)
 
         evidence = driving_evidence(reading)
+        if evidence is not None:
+            self._last_evidence_at = reading.timestamp
         if evidence is True:
             self._on_driving(reading, events)
-        elif evidence is False:
+        elif evidence is False or self._idle_since is not None:
             self._on_idle(reading, events)
 
         if self.trip is not None:
@@ -151,14 +159,16 @@ class TripEngine:
         self._last = reading
         return events
 
-    def _expire_restored_trip(self, reading: Reading) -> None:
-        """Drop a restored trip that a long outage has made meaningless."""
-        trip = self.trip
+    def _expire_silent_trip(self, reading: Reading) -> None:
+        """Drop a trip nothing has been heard about for a long time.
+
+        A stream that dies at speed leaves the last values looking like a
+        drive, and a long outage leaves a restored trip with no meaning.
+        """
         if (
-            trip is not None
-            and trip.restored
-            and self._last_driving_at is not None
-            and reading.timestamp - self._last_driving_at > RESTORED_TRIP_MAX_SECONDS
+            self.trip is not None
+            and self._last_evidence_at is not None
+            and reading.timestamp - self._last_evidence_at > SILENT_TRIP_MAX_SECONDS
         ):
             self.trip = None
             self.driving = False
@@ -180,7 +190,6 @@ class TripEngine:
         return reading.timestamp - self._route_since >= ROUTE_STABLE_SECONDS
 
     def _on_driving(self, reading: Reading, events: list[DriveEvent]) -> None:
-        self._last_driving_at = reading.timestamp
         self._idle_since = None
         self.driving = True
         if self.trip is not None:
@@ -319,7 +328,7 @@ class TripEngine:
         return {
             "driving": self.driving,
             "trip": asdict(self.trip) if self.trip is not None else None,
-            "last_driving_at": self._last_driving_at,
+            "last_evidence_at": self._last_evidence_at,
             "idle_since": self._idle_since,
             "route": self._route,
             "route_since": self._route_since,
@@ -341,7 +350,7 @@ class TripEngine:
         trip = data.get("trip")
         if trip is not None:
             engine.trip = Trip(**{**trip, "restored": True})
-        engine._last_driving_at = data.get("last_driving_at")
+        engine._last_evidence_at = data.get("last_evidence_at")
         engine._idle_since = data.get("idle_since")
         engine._route = data.get("route", "")
         engine._route_since = data.get("route_since", 0.0)
