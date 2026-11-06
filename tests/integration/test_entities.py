@@ -6,6 +6,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from homeassistant.util.unit_system import METRIC_SYSTEM
 
+from custom_components.tesla_drive_tracker.const import DOMAIN
+
 from .conftest import VIN, Car
 
 PLACE = {"latitude": 10.0, "longitude": 20.0}
@@ -34,9 +36,32 @@ async def test_optional_sensors_need_a_source(car: Car, hass: HomeAssistant) -> 
     await car.stop()
 
 
-async def test_a_new_install_fails_hidden(car: Car, hass: HomeAssistant) -> None:
+async def test_a_new_install_shows_the_destination(
+    car: Car, hass: HomeAssistant
+) -> None:
+    await car.start()
+    assert hass.states.get(HIDE).state == "off"
+    await driving_to(car)
+    assert hass.states.get(DESTINATION).state == "Cafe"
+    await car.stop()
+
+
+async def test_a_damaged_saved_state_fails_hidden(
+    car: Car, hass: HomeAssistant, hass_storage
+) -> None:
+    hass_storage[f"{DOMAIN}.{car.entry.entry_id}"] = {
+        "version": 1,
+        "key": f"{DOMAIN}.{car.entry.entry_id}",
+        "data": {"hide": "maybe"},
+    }
     await car.start()
     assert hass.states.get(HIDE).state == "on"
+    await car.stop()
+
+
+async def test_hidden_publishes_no_destination(car: Car, hass: HomeAssistant) -> None:
+    await car.start()
+    await car.coordinator.async_set_hidden(True)
     await driving_to(car)
     assert hass.states.get(DESTINATION).state == STATE_UNKNOWN
     assert hass.states.get(DESTINATION).attributes["status"] == "hidden"
@@ -77,6 +102,7 @@ async def test_the_hide_switch_survives_a_restart(
 
 async def test_events_are_redacted_while_hidden(car: Car) -> None:
     await car.start()
+    await car.coordinator.async_set_hidden(True)
     await car.report("speed", "40")
     await car.report("destination", "Cafe", PLACE)
     await car.wait(125)

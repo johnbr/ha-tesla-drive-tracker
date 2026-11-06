@@ -137,7 +137,7 @@ class DriveCoordinator(DataUpdateCoordinator[DriveView]):
         self.vin: str = entry.data[CONF_VIN]
         self.sources: Sources = {}
         self.trail = Trail()
-        self.hidden = True
+        self.hidden = False
         self.last_trip: dict[str, Any] | None = None
         self.closers: set[CALLBACK_TYPE] = set()
         self._started_at = started_at
@@ -166,7 +166,7 @@ class DriveCoordinator(DataUpdateCoordinator[DriveView]):
             self._engine = TripEngine.from_dict(stored["engine"], self._thresholds)
         if "pairing" in stored:
             self._pairing = DestinationPairing.from_dict(stored["pairing"])
-        self.hidden = is_hidden(stored.get("hide"))
+        self.hidden = is_hidden(stored.get("hide", "off"))
         self.last_trip = stored.get("last_trip")
         self.trail = Trail([tuple(point) for point in stored.get("trail", [])])
 
