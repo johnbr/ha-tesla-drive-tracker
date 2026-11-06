@@ -13,7 +13,12 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import issue_registry as ir
 
-from custom_components.tesla_drive_tracker.const import CONF_ROLES, DOMAIN
+from custom_components.tesla_drive_tracker.const import (
+    CARD_FILENAME,
+    CONF_ROLES,
+    DOMAIN,
+    URL_BASE,
+)
 
 from .conftest import VIN, Car
 
@@ -39,15 +44,29 @@ async def test_a_new_trip_starts_a_new_trail(car: Car) -> None:
     assert car.types == ["drive_started", "drive_ended"]
     await car.report("position", "not_home", {"latitude": 11.0, "longitude": 21.0})
     await car.report("speed", "40")
-    assert car.coordinator.trail.points == [(11.0, 21.0)]
+    assert [point[:2] for point in car.coordinator.trail.points] == [(11.0, 21.0)]
     await car.stop()
 
 
 async def test_a_parked_car_keeps_its_place_after_a_restart(car: Car) -> None:
-    await car.report("position", "home", {"latitude": 10.0, "longitude": 20.0})
+    await car.report(
+        "position", "home", {"latitude": 10.0, "longitude": 20.0, "heading": 135}
+    )
+    await car.report("battery", "78")
     await car.wait_without_integration(5)
     await car.start()
     assert car.coordinator.data.latitude == 10.0
+    assert car.coordinator.data.heading == 135
+    assert car.coordinator.data.battery == 78
+    await car.stop()
+
+
+async def test_a_restored_battery_never_reaches_the_engine(car: Car) -> None:
+    await car.report("battery", "78")
+    await car.wait_without_integration(5)
+    await car.start()
+    await car.report("speed", "40")
+    assert car.events[0].data["battery"] is None
     await car.stop()
 
 
@@ -144,3 +163,41 @@ async def test_unload(car: Car) -> None:
     assert car.entry.state is ConfigEntryState.LOADED
     await car.stop()
     assert car.entry.state is ConfigEntryState.NOT_LOADED
+
+
+async def test_the_car_is_drawn_from_what_it_reports(car: Car) -> None:
+    await car.start()
+    await car.report("paint", "SteelGrey")
+    await car.report("car_type", "model_s")
+    assert car.coordinator.data.paint == "SteelGrey"
+    assert car.coordinator.data.model == "s"
+    await car.stop()
+
+
+async def test_paint_survives_a_restart(car: Car) -> None:
+    await car.report("paint", "SteelGrey")
+    await car.wait_without_integration(5)
+    await car.start()
+    assert car.coordinator.data.paint == "SteelGrey"
+    await car.stop()
+
+
+async def test_the_owners_choice_beats_the_car(car: Car, hass: HomeAssistant) -> None:
+    hass.config_entries.async_update_entry(
+        car.entry, options={"car_model": "y", "car_color": "#112233"}
+    )
+    await car.start()
+    assert car.coordinator.data.model == "y"
+    assert car.coordinator.data.paint == "#112233"
+    await car.stop()
+
+
+async def test_the_card_is_served(
+    car: Car, hass: HomeAssistant, hass_client
+) -> None:
+    await car.start()
+    client = await hass_client()
+    response = await client.get(f"{URL_BASE}/{CARD_FILENAME}")
+    assert response.status == 200
+    assert "tesla-drive-tracker-card" in await response.text()
+    await car.stop()

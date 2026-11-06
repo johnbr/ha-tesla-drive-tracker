@@ -18,15 +18,16 @@ MAX_POINTS = 3000
 
 @dataclass(slots=True)
 class Trail:
-    """Points as ``(latitude, longitude)``, oldest first."""
+    """Points as ``(latitude, longitude, timestamp)``, oldest first."""
 
-    points: list[tuple[float, float]] = field(default_factory=list)
+    points: list[tuple[float, float, float]] = field(default_factory=list)
 
-    def add(self, point: tuple[float, float]) -> bool:
+    def add(self, latitude: float, longitude: float, now: float) -> bool:
         """Keep a point if the car has moved, returning whether it was kept."""
-        if self.points and distance_km(self.points[-1], point) < MIN_STEP_KM:
+        point = (latitude, longitude)
+        if self.points and distance_km(self.points[-1][:2], point) < MIN_STEP_KM:
             return False
-        self.points.append(point)
+        self.points.append((latitude, longitude, now))
         if len(self.points) > MAX_POINTS:
             half = len(self.points) // 2
             self.points = self.points[:half:2] + self.points[half:]

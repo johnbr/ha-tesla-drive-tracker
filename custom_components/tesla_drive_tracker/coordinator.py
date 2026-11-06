@@ -30,6 +30,8 @@ from homeassistant.util import dt as dt_util
 from homeassistant.util.unit_conversion import DistanceConverter, SpeedConverter
 
 from .const import (
+    CONF_CAR_COLOR,
+    CONF_CAR_MODEL,
     CONF_ROLES,
     CONF_THRESHOLDS,
     CONF_VIN,
@@ -54,17 +56,21 @@ from .pairing import (
     DestinationPairing,
 )
 from .privacy import is_hidden, redact_event
-from .reading import build_reading, number, stream_silent
-from .resolver import PLATFORMS, Sources, find_sources
+from .reading import build_reading, car_model, number, stream_silent
+from .resolver import PLATFORMS, Sources, find_device_model, find_sources
 from .route_line import RouteLine, parse_route_line
 from .sources import (
     ROLE_ARRIVAL_BATTERY,
+    ROLE_BATTERY,
+    ROLE_CAR_TYPE,
     ROLE_DESTINATION,
     ROLE_DISTANCE,
     ROLE_GEAR,
     ROLE_HEADING,
     ROLE_ODOMETER,
+    ROLE_PAINT,
     ROLE_POSITION,
+    ROLE_ROOF,
     ROLE_ROUTE_LINE,
     ROLE_SPEED,
     ROLE_TRAFFIC_DELAY,
@@ -143,6 +149,7 @@ class DriveCoordinator(DataUpdateCoordinator[DriveView]):
         self._store = _store(hass, entry.entry_id)
         self._saved_at = 0.0
         self._event_listeners: list[EventListener] = []
+        self._device_model: str | None = None
         self._route_text: str | None = None
         self._route_line = RouteLine()
         self._resolver = Debouncer(
@@ -164,6 +171,7 @@ class DriveCoordinator(DataUpdateCoordinator[DriveView]):
         self.trail = Trail([tuple(point) for point in stored.get("trail", [])])
 
         self.sources = self._resolve()
+        self._device_model = find_device_model(self.hass, self.vin)
         self._report_sources()
         entity_ids = {
             entity_id
@@ -302,9 +310,12 @@ class DriveCoordinator(DataUpdateCoordinator[DriveView]):
             pick_sample(self._samples(ROLE_DESTINATION), now, started_at), now
         )
 
-        # Where a parked car was left is still where it is after a restart, and
-        # this feeds only the map, never the engine.
+        # Where a parked car was left is still where it is after a restart, facing
+        # the same way with the same charge. A parked car doesn't repeat these, and
+        # they feed only the display, never the engine.
         position = pick_sample(self._samples(ROLE_POSITION), now, 0)
+        heading = pick(self._samples(ROLE_HEADING), now, 0)
+        battery = pick(self._samples(ROLE_BATTERY), now, 0)
         located = position is not None and position.latitude is not None
         for event in events:
             self._on_event(event)
@@ -313,7 +324,7 @@ class DriveCoordinator(DataUpdateCoordinator[DriveView]):
             and self._engine.trip is not None
             and values[ROLE_POSITION] is not None
         ):
-            self.trail.add((position.latitude, position.longitude))
+            self.trail.add(position.latitude, position.longitude, now)
 
         view = build_view(
             self._engine,
@@ -330,12 +341,27 @@ class DriveCoordinator(DataUpdateCoordinator[DriveView]):
             latitude=position.latitude if located else None,
             longitude=position.longitude if located else None,
             position_at=position.reported_at if located else None,
-            heading=number(values[ROLE_HEADING]),
+            heading=number(heading),
             speed=reading.speed,
-            battery=reading.battery,
+            battery=number(battery),
+            **self._look(now),
         )
         self._save_later(now, bool(events))
         return view
+
+    def _look(self, now: float) -> dict[str, str | None]:
+        """How the car is drawn. Paint doesn't go stale, so restored values do."""
+        options = self.config_entry.options
+        car_type, paint, roof = (
+            pick(self._samples(role), now, 0)
+            for role in (ROLE_CAR_TYPE, ROLE_PAINT, ROLE_ROOF)
+        )
+        return {
+            "model": options.get(CONF_CAR_MODEL)
+            or car_model(car_type, self._device_model),
+            "paint": options.get(CONF_CAR_COLOR) or paint,
+            "roof": roof,
+        }
 
     def _on_event(self, event: DriveEvent) -> None:
         if event.type == EVENT_DRIVE_STARTED:

@@ -36,6 +36,8 @@ CHARGING_STATES = frozenset({"charging", "starting"})
 # dead zones, up to 317 s, and nothing in them marks the values unknown.
 MOVING_SILENCE_SECONDS = 120
 
+MODELS = frozenset({"s", "3", "x", "y", "cybertruck"})
+
 
 def number(value: Any) -> float | None:
     """A float from a state, or ``None`` when it isn't one."""
@@ -74,6 +76,16 @@ def stream_silent(
     if (number(speed) or 0) >= CREEP_SPEED_MPH:
         return age > MOVING_SILENCE_SECONDS
     return _gear(gear) in MOVING_GEARS and age > SILENT_TRIP_MAX_SECONDS
+
+
+def car_model(car_type: Any, device_model: str | None = None) -> str | None:
+    """Which drawing a car gets, from ``model_s`` or ``Model S``, if it's known."""
+    for value in (car_type, device_model):
+        text = str(value or "").lower().replace("_", "").replace(" ", "")
+        text = text.removeprefix("model")
+        if text in MODELS:
+            return text
+    return None
 
 
 def minutes_until(value: Any, now: float) -> float | None:

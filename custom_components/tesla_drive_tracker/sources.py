@@ -45,6 +45,9 @@ ROLE_OCCUPANCY = "occupancy"
 ROLE_CHARGING = "charging"
 ROLE_ODOMETER = "odometer"
 ROLE_ONLINE = "online"
+ROLE_PAINT = "paint"
+ROLE_ROOF = "roof"
+ROLE_CAR_TYPE = "car_type"
 
 INVALID_STATES = frozenset({"unknown", "unavailable", "none", ""})
 VIN_PATTERN = re.compile(r"^[0-9A-HJ-NPR-Z]{17}(?=[-_])")
@@ -126,6 +129,9 @@ ROLES: dict[str, tuple[Source, ...]] = {
     ),
     # Not a polled limit: a sleeping car's status legitimately holds between polls.
     ROLE_ONLINE: (Source(FLEET, "binary_sensor", "-state"),),
+    ROLE_PAINT: (_telemetry("sensor", "_signal_ExteriorColor"),),
+    ROLE_ROOF: (_telemetry("sensor", "_signal_RoofColor"),),
+    ROLE_CAR_TYPE: (_telemetry("sensor", "_signal_CarType"),),
 }
 
 

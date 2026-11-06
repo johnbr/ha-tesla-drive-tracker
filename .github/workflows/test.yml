@@ -27,3 +27,28 @@ jobs:
         run: pip install -r requirements_test.txt
       - name: Run tests
         run: pytest
+
+  javascript:
+    name: javascript
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Run card tests
+        run: npm run test:js
+      - name: Verify the committed bundle matches the sources
+        run: |
+          bundle=custom_components/tesla_drive_tracker/frontend/tesla-drive-tracker-card.js
+          cp "$bundle" /tmp/committed.js
+          npm run build
+          diff -q /tmp/committed.js "$bundle" \
+            || { echo "::error::Committed bundle is stale: run 'npm run build' and commit it"; exit 1; }

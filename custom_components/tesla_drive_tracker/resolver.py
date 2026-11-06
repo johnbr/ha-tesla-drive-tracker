@@ -31,6 +31,21 @@ def find_cars(hass: HomeAssistant) -> dict[str, str]:
     return cars
 
 
+def find_device_model(hass: HomeAssistant, vin: str) -> str | None:
+    """The model a source integration reports for this car."""
+    devices = dr.async_get(hass)
+    for entry in er.async_get(hass).entities.values():
+        if (
+            entry.platform in PLATFORMS
+            and entry.device_id
+            and vin_of(entry.unique_id) == vin
+        ):
+            device = devices.async_get(entry.device_id)
+            if device is not None and device.model:
+                return device.model
+    return None
+
+
 def find_sources(
     hass: HomeAssistant, vin: str, overrides: Mapping[str, str] | None = None
 ) -> Sources:

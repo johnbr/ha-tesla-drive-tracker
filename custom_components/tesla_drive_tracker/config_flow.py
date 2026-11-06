@@ -13,15 +13,25 @@ from homeassistant.config_entries import (
 from homeassistant.core import callback
 from homeassistant.helpers import selector
 
-from .const import CONF_ROLES, CONF_THRESHOLDS, CONF_VIN, DOMAIN
+from .const import (
+    CONF_CAR_COLOR,
+    CONF_CAR_MODEL,
+    CONF_ROLES,
+    CONF_THRESHOLDS,
+    CONF_VIN,
+    DOMAIN,
+)
 from .coordinator import DriveConfigEntry
 from .engine import DEFAULT_THRESHOLDS
-from .reading import number
+from .reading import MODELS, number
 from .resolver import find_cars
 from .sources import (
+    ROLE_CAR_TYPE,
     ROLE_DESTINATION,
     ROLE_HEADING,
+    ROLE_PAINT,
     ROLE_POSITION,
+    ROLE_ROOF,
     ROLE_ROUTE_LINE,
     ROLES,
 )
@@ -30,7 +40,9 @@ MAX_THRESHOLD_MINUTES = 120
 
 TRACKER_ROLES = frozenset({ROLE_POSITION, ROLE_DESTINATION})
 # These come from an attribute of a specific entity, so another entity can't serve.
-FIXED_ROLES = frozenset({ROLE_HEADING, ROLE_ROUTE_LINE})
+FIXED_ROLES = frozenset(
+    {ROLE_HEADING, ROLE_ROUTE_LINE, ROLE_PAINT, ROLE_ROOF, ROLE_CAR_TYPE}
+)
 
 
 def _thresholds(values: list[str]) -> list[float] | None:
@@ -107,8 +119,13 @@ class DriveTrackerOptionsFlow(OptionsFlowWithReload):
                     for role in ROLES
                     if user_input.get(role)
                 }
+                look = {
+                    key: user_input[key]
+                    for key in (CONF_CAR_MODEL, CONF_CAR_COLOR)
+                    if user_input.get(key)
+                }
                 return self.async_create_entry(
-                    data={CONF_THRESHOLDS: thresholds, CONF_ROLES: roles}
+                    data={CONF_THRESHOLDS: thresholds, CONF_ROLES: roles, **look}
                 )
 
         options = self.config_entry.options
@@ -122,6 +139,22 @@ class DriveTrackerOptionsFlow(OptionsFlowWithReload):
                 )
             )
         }
+        schema[
+            probatio.Optional(
+                CONF_CAR_MODEL,
+                description={"suggested_value": options.get(CONF_CAR_MODEL)},
+            )
+        ] = selector.SelectSelector(
+            selector.SelectSelectorConfig(
+                options=sorted(MODELS), translation_key=CONF_CAR_MODEL
+            )
+        )
+        schema[
+            probatio.Optional(
+                CONF_CAR_COLOR,
+                description={"suggested_value": options.get(CONF_CAR_COLOR)},
+            )
+        ] = selector.TextSelector()
         roles = options.get(CONF_ROLES, {})
         for role in ROLES:
             if role in FIXED_ROLES:

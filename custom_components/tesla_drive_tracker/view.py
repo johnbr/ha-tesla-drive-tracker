@@ -48,6 +48,9 @@ class DriveView:
     trip_started_at: float | None = None
     trip_distance: float | None = None
     trip_duration: int | None = None
+    model: str | None = None
+    paint: str | None = None
+    roof: str | None = None
 
     def as_wire(self) -> dict[str, Any]:
         """Plain data for the websocket, sharing the route rather than copying it."""
@@ -67,7 +70,7 @@ def build_view(
     route_line: RouteLine | None = None,
     odometer: float | None = None,
     last_trip: dict[str, Any] | None = None,
-    **position: float | None,
+    **car: float | str | None,
 ) -> DriveView:
     """The view of a car from what the engine and its sources say now."""
     trip = engine.trip
@@ -124,5 +127,5 @@ def build_view(
         trip_duration=(
             None if trip_duration is None else round(trip_duration / 60)
         ),
-        **position,
+        **car,
     )

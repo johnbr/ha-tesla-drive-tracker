@@ -33,11 +33,15 @@
           "occupancy": "Driver present",
           "charging": "Charging state",
           "odometer": "Odometer",
-          "online": "Online"
+          "online": "Online",
+          "car_model": "Model",
+          "car_color": "Paint"
         },
         "data_description": {
           "arrival_thresholds": "How long before arrival a drive counts as arriving. Each is between 0 and 120 minutes.",
-          "arrival": "The car's arrival time, or any sensor giving a timestamp or minutes."
+          "arrival": "The car's arrival time, or any sensor giving a timestamp or minutes.",
+          "car_model": "Which drawing the card uses. Leave empty to work it out from the car.",
+          "car_color": "A hex colour such as #6d7276, or one of Tesla's paint names. Leave empty to use what the car reports."
         }
       }
     },
@@ -117,6 +121,17 @@
     "no_sources": {
       "title": "No sources for {name}",
       "description": "Nothing can tell whether {name} is driving, because no speed or gear entity was found for it. Enable those entities in Tesla Fleet Telemetry or Tesla Fleet, or choose your own in the integration's options."
+    }
+  },
+  "selector": {
+    "car_model": {
+      "options": {
+        "s": "Model S",
+        "3": "Model 3",
+        "x": "Model X",
+        "y": "Model Y",
+        "cybertruck": "Cybertruck"
+      }
     }
   }
 }

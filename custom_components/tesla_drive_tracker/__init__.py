@@ -7,11 +7,13 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.start import async_at_started
 from homeassistant.helpers.typing import ConfigType
+from homeassistant.loader import async_get_integration
 from homeassistant.util import dt as dt_util
 from homeassistant.util.hass_dict import HassKey
 
 from .const import DOMAIN
 from .coordinator import DriveConfigEntry, DriveCoordinator, async_remove_storage
+from .frontend import async_register_card
 from .websocket import async_setup_websocket
 
 PLATFORMS = [
@@ -41,6 +43,8 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     mark(hass)
     async_at_started(hass, mark)
     async_setup_websocket(hass)
+    integration = await async_get_integration(hass, DOMAIN)
+    await async_register_card(hass, str(integration.version))
     return True
 
 
