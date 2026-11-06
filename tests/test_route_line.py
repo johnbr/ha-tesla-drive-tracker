@@ -9,7 +9,11 @@ from __future__ import annotations
 import base64
 
 import pytest
-from tesla_drive_tracker_isolated.route_line import decode_polyline, parse_route_line
+from tesla_drive_tracker_isolated.route_line import (
+    decode_polyline,
+    ends_at,
+    parse_route_line,
+)
 
 METRICS_ONLY = "EgUNvXH8Pw=="
 # Field 2 again, with the flag real routes carry on their latest length.
@@ -93,3 +97,11 @@ def test_truncated_polyline_gives_no_points() -> None:
 def test_coordinates_outside_the_world_give_no_points() -> None:
     text = encode_polyline(((95.0, 20.0),))
     assert parse_route_line(payload(text)).points == ()
+
+
+def test_a_line_belongs_to_the_place_it_ends_at() -> None:
+    line = ((10.0, 20.0), (10.5, 20.5))
+    assert ends_at(line, (10.5, 20.5))
+    assert ends_at(line, (10.503, 20.5))
+    assert not ends_at(line, (10.51, 20.5))
+    assert not ends_at((), (10.5, 20.5))

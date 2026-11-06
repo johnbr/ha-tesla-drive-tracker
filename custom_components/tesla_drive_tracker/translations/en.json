@@ -1,0 +1,122 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Choose a car",
+        "description": "Cars come from the Tesla Fleet Telemetry and Tesla Fleet integrations.",
+        "data": {
+          "vin": "Car"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "This car is already added.",
+      "no_cars": "No car to add. Set up Tesla Fleet Telemetry or Tesla Fleet first."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Drive tracking",
+        "description": "Leave a source empty to find it automatically.",
+        "data": {
+          "arrival_thresholds": "Arriving thresholds (minutes)",
+          "position": "Position",
+          "speed": "Speed",
+          "gear": "Gear",
+          "destination": "Destination",
+          "arrival": "Arrival time or travel time",
+          "distance": "Distance to arrival",
+          "traffic_delay": "Traffic delay",
+          "battery": "Battery level",
+          "arrival_battery": "Battery at arrival",
+          "occupancy": "Driver present",
+          "charging": "Charging state",
+          "odometer": "Odometer",
+          "online": "Online"
+        },
+        "data_description": {
+          "arrival_thresholds": "How long before arrival a drive counts as arriving. Each is between 0 and 120 minutes.",
+          "arrival": "The car's arrival time, or any sensor giving a timestamp or minutes."
+        }
+      }
+    },
+    "error": {
+      "invalid_thresholds": "Enter at least one number of minutes, each between 0 and 120."
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "driving": {
+        "name": "Driving"
+      },
+      "heading_home": {
+        "name": "Heading home"
+      }
+    },
+    "device_tracker": {
+      "destination": {
+        "name": "Destination"
+      }
+    },
+    "sensor": {
+      "drive_state": {
+        "name": "Drive state",
+        "state": {
+          "parked": "Parked",
+          "driving": "Driving",
+          "navigating": "Navigating",
+          "arriving": "Arriving",
+          "charging": "Charging",
+          "offline": "Offline"
+        }
+      },
+      "destination": {
+        "name": "Destination",
+        "state_attributes": {
+          "status": {
+            "name": "Status",
+            "state": {
+              "none": "None",
+              "paired": "Paired",
+              "unpaired": "Unpaired",
+              "hidden": "Hidden"
+            }
+          }
+        }
+      },
+      "eta": {
+        "name": "ETA"
+      },
+      "time_remaining": {
+        "name": "Time remaining"
+      },
+      "distance_remaining": {
+        "name": "Distance remaining"
+      },
+      "arrival_battery": {
+        "name": "Arrival battery"
+      },
+      "traffic_delay": {
+        "name": "Traffic delay"
+      },
+      "trip_distance": {
+        "name": "Trip distance"
+      },
+      "trip_duration": {
+        "name": "Trip duration"
+      }
+    },
+    "switch": {
+      "hide_destination": {
+        "name": "Hide destination"
+      }
+    }
+  },
+  "issues": {
+    "no_sources": {
+      "title": "No sources for {name}",
+      "description": "Nothing can tell whether {name} is driving, because no speed or gear entity was found for it. Enable those entities in Tesla Fleet Telemetry or Tesla Fleet, or choose your own in the integration's options."
+    }
+  }
+}

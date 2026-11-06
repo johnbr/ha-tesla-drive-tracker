@@ -8,10 +8,8 @@
   "codeowners": [
     "@johnbr"
   ],
-  "config_flow": false,
+  "config_flow": true,
   "dependencies": [
-    "frontend",
-    "http",
     "websocket_api"
   ],
   "documentation": "https://github.com/johnbr/ha-tesla-drive-tracker",

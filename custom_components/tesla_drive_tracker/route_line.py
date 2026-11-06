@@ -19,10 +19,15 @@ from __future__ import annotations
 
 import base64
 import binascii
+import math
 from dataclasses import dataclass
 
 GEOMETRY_FIELD = 1
 PRECISION = 1e6
+EARTH_RADIUS_KM = 6371.0
+
+# A line that ends further than this from the destination is still the last route.
+ENDS_AT_DESTINATION_KM = 0.5
 
 _VARINT = 0
 _FIXED64 = 1
@@ -125,3 +130,22 @@ def parse_route_line(payload: str | None) -> RouteLine:
         return RouteLine(decode_polyline(geometry.decode("ascii")))
     except (binascii.Error, ValueError, IndexError, UnicodeDecodeError):
         return RouteLine()
+
+
+def distance_km(a: tuple[float, float], b: tuple[float, float]) -> float:
+    """The great circle distance between two points."""
+    lat_a, lon_a, lat_b, lon_b = map(math.radians, (*a, *b))
+    half_chord = (
+        math.sin((lat_b - lat_a) / 2) ** 2
+        + math.cos(lat_a) * math.cos(lat_b) * math.sin((lon_b - lon_a) / 2) ** 2
+    )
+    return 2 * EARTH_RADIUS_KM * math.asin(math.sqrt(half_chord))
+
+
+def ends_at(
+    points: tuple[tuple[float, float], ...], destination: tuple[float, float]
+) -> bool:
+    """Whether a line leads to this destination rather than the previous one."""
+    return bool(points) and (
+        distance_km(points[-1], destination) <= ENDS_AT_DESTINATION_KM
+    )

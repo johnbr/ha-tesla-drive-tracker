@@ -7,10 +7,12 @@ VIN in their unique_ids, which is also how their two devices are paired.
 Each role lists its candidates and the freshest valid value wins. Three rules
 keep a stale value out:
 
-- A value last reported before Home Assistant started is a restored one, so it
-  never counts.
+- A value last reported before ``started_at`` is a restored one, so it never
+  counts. Source integrations write restored values during startup, so
+  ``started_at`` must be when Home Assistant finished starting, not when it began.
 - Push signals hold their last value legitimately, because a parked car doesn't
-  repeat itself, so they have no age limit.
+  repeat itself, so they have no age limit. A moving car does repeat itself, and
+  ``reading.stream_silent`` handles a stream that stops mid-drive.
 - A polled value does. The poll can hold the speed of the drive long after the
   car parked, which has shown 39 mph for a stationary car.
 
@@ -122,7 +124,8 @@ ROLES: dict[str, tuple[Source, ...]] = {
         _telemetry("sensor", "_odometer_telemetry"),
         _fleet("sensor", "vehicle_state_odometer"),
     ),
-    ROLE_ONLINE: (_fleet("binary_sensor", "state"),),
+    # Not a polled limit: a sleeping car's status legitimately holds between polls.
+    ROLE_ONLINE: (Source(FLEET, "binary_sensor", "-state"),),
 }
 
 
@@ -132,6 +135,8 @@ class Sample:
 
     value: Any
     reported_at: float
+    latitude: float | None = None
+    longitude: float | None = None
 
 
 def vin_of(unique_id: str) -> str | None:
@@ -165,10 +170,10 @@ def _usable(source: Source, sample: Sample, now: float, started_at: float) -> bo
     return source.max_age is None or now - sample.reported_at <= source.max_age
 
 
-def pick(
+def pick_sample(
     samples: Iterable[tuple[Source, Sample]], now: float, started_at: float
-) -> Any:
-    """The freshest usable value of a role, or ``None`` when there isn't one."""
+) -> Sample | None:
+    """The freshest usable sample of a role, or ``None`` when there isn't one."""
     usable = [
         sample
         for source, sample in samples
@@ -176,4 +181,12 @@ def pick(
     ]
     if not usable:
         return None
-    return max(usable, key=lambda sample: sample.reported_at).value
+    return max(usable, key=lambda sample: sample.reported_at)
+
+
+def pick(
+    samples: Iterable[tuple[Source, Sample]], now: float, started_at: float
+) -> Any:
+    """The freshest usable value of a role, or ``None`` when there isn't one."""
+    sample = pick_sample(samples, now, started_at)
+    return None if sample is None else sample.value
