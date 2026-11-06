@@ -1,0 +1,22 @@
+{
+  "domain": "tesla_drive_tracker",
+  "name": "Tesla Drive Tracker",
+  "after_dependencies": [
+    "tesla_fleet",
+    "tesla_telemetry"
+  ],
+  "codeowners": [
+    "@johnbr"
+  ],
+  "config_flow": true,
+  "dependencies": [
+    "frontend",
+    "http",
+    "websocket_api"
+  ],
+  "documentation": "https://github.com/johnbr/ha-tesla-drive-tracker",
+  "integration_type": "device",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/johnbr/ha-tesla-drive-tracker/issues",
+  "version": "0.1.0"
+}
