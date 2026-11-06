@@ -5,6 +5,7 @@ from datetime import UTC, datetime, timedelta
 
 from tesla_drive_tracker_isolated.reading import (
     build_reading,
+    car_model,
     minutes_until,
     stream_silent,
 )
@@ -85,3 +86,19 @@ def test_a_car_stopped_in_gear_gets_a_long_time() -> None:
 def test_a_parked_car_is_never_silent() -> None:
     assert not stream_silent("0", 1000.0, "P", 900.0, 900000.0)
     assert not stream_silent(None, None, None, None, 900000.0)
+
+
+def test_a_model_comes_from_either_spelling() -> None:
+    assert car_model("model_s") == "s"
+    assert car_model("modelx") == "x"
+    assert car_model(None, "Model 3") == "3"
+    assert car_model("cybertruck") == "cybertruck"
+
+
+def test_a_car_type_beats_the_device_model() -> None:
+    assert car_model("model_y", "Model S") == "y"
+
+
+def test_an_unknown_model_is_unknown() -> None:
+    assert car_model("roadster") is None
+    assert car_model(None, None) is None

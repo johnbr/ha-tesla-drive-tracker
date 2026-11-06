@@ -101,3 +101,14 @@ async def test_an_unloaded_car_says_so(
     await client.receive_json()
     await car.stop()
     assert (await client.receive_json())["event"] == {"type": "closed"}
+
+
+async def test_cars_are_listed_without_their_vin(
+    car: Car, hass: HomeAssistant, hass_ws_client
+) -> None:
+    await car.start()
+    client = await hass_ws_client(hass)
+    await client.send_json_auto_id({"type": f"{DOMAIN}/cars"})
+    result = (await client.receive_json())["result"]
+    assert result == [{"entry_id": car.entry.entry_id, "name": "Test Car"}]
+    await car.stop()

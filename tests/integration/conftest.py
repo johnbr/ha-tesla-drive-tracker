@@ -38,6 +38,8 @@ TELEMETRY_ENTITIES = {
     "occupancy": ("binary_sensor", "_user_present_telemetry"),
     "route_line": ("sensor", "_signal_RouteLine"),
     "arrival_battery": ("sensor", "_signal_ExpectedEnergyPercentAtTripArrival"),
+    "paint": ("sensor", "_signal_ExteriorColor"),
+    "car_type": ("sensor", "_signal_CarType"),
 }
 
 

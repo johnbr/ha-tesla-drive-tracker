@@ -9,6 +9,11 @@ LOGGER = logging.getLogger(__package__)
 CONF_VIN = "vin"
 CONF_THRESHOLDS = "arrival_thresholds"
 CONF_ROLES = "roles"
+CONF_CAR_MODEL = "car_model"
+CONF_CAR_COLOR = "car_color"
+
+URL_BASE = "/tesla_drive_tracker"
+CARD_FILENAME = "tesla-drive-tracker-card.js"
 
 STORAGE_VERSION = 1
 
