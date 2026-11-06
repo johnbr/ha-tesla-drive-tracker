@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Project status
+    url: https://github.com/johnbr/ha-tesla-drive-tracker#readme
+    about: Check the README first. This integration is still being built.

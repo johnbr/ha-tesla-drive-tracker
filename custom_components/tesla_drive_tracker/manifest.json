@@ -8,7 +8,7 @@
   "codeowners": [
     "@johnbr"
   ],
-  "config_flow": true,
+  "config_flow": false,
   "dependencies": [
     "frontend",
     "http",
