@@ -161,6 +161,28 @@ def test_drive_ends_with_a_summary() -> None:
     assert engine.trip is None
 
 
+def test_the_path_driven_stands_in_for_a_missing_odometer() -> None:
+    engine = TripEngine()
+    engine.update(Reading(0, **MOVING))
+    engine.update(Reading(300, travelled=1.54, **MOVING))
+    ended = []
+    for now in range(310, 500, 10):
+        ended += engine.update(Reading(now, travelled=1.54, **PARKED))
+    assert ended[0].data["distance"] == 1.5
+    assert ended[0].data["average_speed"] == 17.4
+
+
+def test_the_odometer_beats_the_path_driven() -> None:
+    engine = TripEngine()
+    engine.update(Reading(0, odometer=1000.0, **MOVING))
+    ended = []
+    for now in range(10, 200, 10):
+        ended += engine.update(
+            Reading(now, odometer=1002.0, travelled=1.9, **PARKED)
+        )
+    assert ended[0].data["distance"] == 2.0
+
+
 def test_car_sleeping_right_after_parking_still_ends_the_drive() -> None:
     """Speed and gear both go unknown within three minutes of parking on about
     a quarter of real drives, and the car then stays silent for hours."""

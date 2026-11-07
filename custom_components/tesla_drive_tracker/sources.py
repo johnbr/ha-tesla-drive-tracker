@@ -4,7 +4,7 @@ Entities are found through the registry by platform and unique_id, never by
 entity_id text, because owners rename things. Both supported platforms embed the
 VIN in their unique_ids, which is also how their two devices are paired.
 
-Each role lists its candidates and the freshest valid value wins. Three rules
+Each role lists its candidates and the freshest valid value wins. Four rules
 keep a stale value out:
 
 - A value last reported before ``started_at`` is a restored one, so it never
@@ -15,6 +15,9 @@ keep a stale value out:
   ``reading.stream_silent`` handles a stream that stops mid-drive.
 - A polled value does. The poll can hold the speed of the drive long after the
   car parked, which has shown 39 mph for a stationary car.
+- A polled route tracker reports ``home`` for a route home, where the pushed one
+  gives the route's name, so that word never overrules another source. Freshest
+  wins would otherwise read each poll as the route ending.
 
 This module imports nothing from Home Assistant.
 """
@@ -29,6 +32,7 @@ TELEMETRY = "tesla_telemetry"
 FLEET = "tesla_fleet"
 
 POLLED_MAX_AGE_SECONDS = 120
+ZONE_WORDS = frozenset({"home", "not_home"})
 
 ROLE_POSITION = "position"
 ROLE_HEADING = "heading"
@@ -62,6 +66,7 @@ class Source:
     suffix: str
     attribute: str | None = None
     max_age: float | None = None
+    zone_words: bool = False
 
 
 def _telemetry(domain: str, suffix: str, attribute: str | None = None) -> Source:
@@ -90,7 +95,13 @@ ROLES: dict[str, tuple[Source, ...]] = {
     ),
     ROLE_DESTINATION: (
         _telemetry("device_tracker", "_route_telemetry"),
-        _fleet("device_tracker", "route"),
+        Source(
+            FLEET,
+            "device_tracker",
+            "-route",
+            max_age=POLLED_MAX_AGE_SECONDS,
+            zone_words=True,
+        ),
     ),
     ROLE_ARRIVAL: (
         _telemetry("sensor", "_time_to_arrival_telemetry"),
@@ -181,13 +192,21 @@ def pick_sample(
 ) -> Sample | None:
     """The freshest usable sample of a role, or ``None`` when there isn't one."""
     usable = [
-        sample
+        (source, sample)
         for source, sample in samples
         if _usable(source, sample, now, started_at)
     ]
     if not usable:
         return None
-    return max(usable, key=lambda sample: sample.reported_at)
+    meaningful = [
+        sample
+        for source, sample in usable
+        if not (source.zone_words and sample.value in ZONE_WORDS)
+    ]
+    return max(
+        meaningful or [sample for _, sample in usable],
+        key=lambda sample: sample.reported_at,
+    )
 
 
 def pick(

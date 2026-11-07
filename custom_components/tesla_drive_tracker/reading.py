@@ -105,7 +105,11 @@ def minutes_until(value: Any, now: float) -> float | None:
 
 
 def build_reading(
-    values: Mapping[str, Any], now: float, *, at_home: bool | None = None
+    values: Mapping[str, Any],
+    now: float,
+    *,
+    at_home: bool | None = None,
+    travelled: float | None = None,
 ) -> Reading:
     """The car right now, from the value picked for each role."""
     return Reading(
@@ -117,6 +121,7 @@ def build_reading(
         destination=values.get(ROLE_DESTINATION),
         minutes_to_arrival=minutes_until(values.get(ROLE_ARRIVAL), now),
         odometer=number(values.get(ROLE_ODOMETER)),
+        travelled=travelled,
         battery=number(values.get(ROLE_BATTERY)),
         at_home=at_home,
         online=values.get(ROLE_ONLINE) != "off",

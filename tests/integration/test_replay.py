@@ -7,8 +7,9 @@ longer holds it, or because the bug would need a drive that went wrong.
 from __future__ import annotations
 
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 
-from .conftest import Car
+from .conftest import VIN, Car
 
 
 async def replay(car: Car, name: str) -> list[tuple[float, str]]:
@@ -161,4 +162,49 @@ async def test_restored_values_never_count(car: Car) -> None:
     await car.wait(60)
     assert car.coordinator.data.driving is False
     assert car.events == []
+    await car.stop()
+
+
+async def test_a_poll_on_the_way_home_keeps_the_route(
+    car: Car, hass: HomeAssistant
+) -> None:
+    """The timing of the first real drive: the owner changed the route to home,
+    and twelve seconds later a poll of the route tracker said ``home``."""
+    car.entity_ids["polled_route"] = (
+        er.async_get(hass)
+        .async_get_or_create("device_tracker", "tesla_fleet", f"{VIN}-route")
+        .entity_id
+    )
+    await car.report("polled_route", "unknown")
+    await car.start()
+    await car.coordinator.async_set_hidden(False)
+    await car.report("speed", "40")
+    await car.report("destination", "Home", {"latitude": 10.0, "longitude": 20.0})
+    await car.wait(12)
+    await car.report("speed", "41")
+    await car.report("polled_route", "home", {"latitude": 10.0, "longitude": 20.0})
+    assert car.coordinator.data.destination == "Home"
+    for _ in range(9):
+        await car.wait(15)
+        await car.report("speed", "40")
+    assert "heading_home" in car.types
+    assert car.coordinator.data.heading_home is True
+    await car.stop()
+
+
+async def test_a_trip_with_no_odometer_is_measured_by_its_trail(car: Car) -> None:
+    await car.start()
+    await car.report("speed", "40")
+    for step in range(1, 5):
+        await car.report(
+            "position", "not_home", {"latitude": 10 + step / 100, "longitude": 20.0}
+        )
+        await car.wait(15)
+        await car.report("speed", "40")
+    assert car.coordinator.data.trip_distance is not None
+    await car.report("speed", "0")
+    await car.wait(200)
+    assert car.types == ["drive_started", "drive_ended"]
+    assert car.events[-1].data["distance"] > 0
+    assert car.events[-1].data["average_speed"] > 0
     await car.stop()

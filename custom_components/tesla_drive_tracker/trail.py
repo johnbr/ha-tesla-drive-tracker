@@ -2,7 +2,8 @@
 
 Every fix would be thousands of points on a long drive, so a point is kept only
 once the car has moved, and the oldest half is thinned when the trail fills. The
-trail is shown, not measured, so losing detail in old points costs nothing.
+length is added up as points arrive, so thinning doesn't shorten it until a restart
+measures what is left, and a road thinned to every other point is nearly as long.
 
 This module imports nothing from Home Assistant.
 """
@@ -21,12 +22,26 @@ class Trail:
     """Points as ``(latitude, longitude, timestamp)``, oldest first."""
 
     points: list[tuple[float, float, float]] = field(default_factory=list)
+    _km: float = field(default=0.0, init=False, repr=False)
+
+    def __post_init__(self) -> None:
+        self._km = sum(
+            distance_km(start[:2], end[:2])
+            for start, end in zip(self.points, self.points[1:], strict=False)
+        )
+
+    @property
+    def length_km(self) -> float | None:
+        """How far the trail runs, or ``None`` before it has two points."""
+        return self._km if len(self.points) > 1 else None
 
     def add(self, latitude: float, longitude: float, now: float) -> bool:
         """Keep a point if the car has moved, returning whether it was kept."""
         point = (latitude, longitude)
-        if self.points and distance_km(self.points[-1][:2], point) < MIN_STEP_KM:
+        step = distance_km(self.points[-1][:2], point) if self.points else 0.0
+        if self.points and step < MIN_STEP_KM:
             return False
+        self._km += step
         self.points.append((latitude, longitude, now))
         if len(self.points) > MAX_POINTS:
             half = len(self.points) // 2
@@ -36,3 +51,4 @@ class Trail:
     def clear(self) -> None:
         """Start again for a new trip."""
         self.points = []
+        self._km = 0.0

@@ -111,6 +111,8 @@ def test_trip_figures_run_during_a_trip_and_hold_after_it() -> None:
     view = build_view(on_a_trip(), fix=fix, hidden=False, now=600, odometer=103.0)
     assert view.trip_distance == 3.0
     assert view.trip_duration == 10
+    view = build_view(on_a_trip(), fix=fix, hidden=False, now=600, travelled=2.0)
+    assert view.trip_distance == 2.0
     view = build_view(
         TripEngine(),
         fix=fix,
