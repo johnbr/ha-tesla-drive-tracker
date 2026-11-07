@@ -7,6 +7,20 @@ test("auto follows while driving and fits otherwise", () => {
   assert.equal(viewAction("auto", false, null, 20, 100), "fit");
 });
 
+test("auto shows the whole trip while driving to a destination", () => {
+  assert.equal(viewAction("auto", true, null, 20, 100, true), "fit");
+  assert.equal(viewAction("auto", false, null, 20, 100, true), "fit");
+});
+
+test("an explicit mode ignores the destination", () => {
+  assert.equal(viewAction("car", true, null, 20, 100, true), "car");
+  assert.equal(viewAction("off", true, null, 20, 100, true), "none");
+});
+
+test("touching the map still wins over a destination", () => {
+  assert.equal(viewAction("auto", true, 90, 20, 100, true), "none");
+});
+
 test("off never moves the view", () => {
   assert.equal(viewAction("off", true, null, 20, 100), "none");
 });
