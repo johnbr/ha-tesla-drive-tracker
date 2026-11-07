@@ -27,11 +27,11 @@ def test_a_full_trail_thins_its_oldest_half() -> None:
     assert trail.points[-1] == (10 + MAX_POINTS / 1000, 20.0, MAX_POINTS)
 
 
-def test_length_needs_two_points() -> None:
+def test_length_starts_at_the_first_point() -> None:
     trail = Trail()
     assert trail.length_km is None
     trail.add(10.0, 20.0, 1)
-    assert trail.length_km is None
+    assert trail.length_km == 0.0
 
 
 def test_length_adds_up_and_clears() -> None:

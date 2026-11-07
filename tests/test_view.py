@@ -106,6 +106,16 @@ def test_heading_home_goes_off_as_soon_as_the_route_changes() -> None:
     assert build_view(engine, fix=fix, hidden=False, now=150).heading_home is False
 
 
+def test_heading_home_goes_off_when_the_car_parks() -> None:
+    engine = on_a_trip("Home")
+    engine.update(Reading(140, speed=40, destination="Home"))
+    fix = DestinationFix(STATUS_PAIRED, "Home", 1.0, 2.0)
+    for now in range(150, 230, 10):
+        engine.update(Reading(now, speed=0, gear="P", destination="Home"))
+    assert engine.trip is not None
+    assert build_view(engine, fix=fix, hidden=False, now=230).heading_home is False
+
+
 def test_trip_figures_run_during_a_trip_and_hold_after_it() -> None:
     fix = DestinationFix(STATUS_NONE)
     view = build_view(on_a_trip(), fix=fix, hidden=False, now=600, odometer=103.0)

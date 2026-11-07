@@ -49,6 +49,11 @@ SILENT_TRIP_MAX_SECONDS = 1800
 CROSSING_WINDOW_MINUTES = 15
 DEFAULT_THRESHOLDS = (5,)
 
+# How far back above the first threshold the arrival may slip before the state
+# leaves arriving. The car's arrival time moves a minute at a time, so without it
+# the state flips back and forth across the threshold.
+ARRIVING_HOLD_MINUTES = 1
+
 EVENT_DRIVE_STARTED = "drive_started"
 EVENT_DRIVE_ENDED = "drive_ended"
 EVENT_DESTINATION_SET = "destination_set"
@@ -149,6 +154,7 @@ class TripEngine:
         self._route = ""
         self._route_since = 0.0
         self._minutes: float | None = None
+        self._arriving = False
         self._last: Reading | None = None
 
     def update(self, reading: Reading) -> list[DriveEvent]:
@@ -168,6 +174,7 @@ class TripEngine:
         if self.trip is not None:
             self._report_route(reading, events)
             self._report_arrival(reading, route_changed, events)
+        self._arriving = self._is_arriving(reading)
         if reading.minutes_to_arrival is not None:
             self._minutes = reading.minutes_to_arrival
         self._last = reading
@@ -267,10 +274,16 @@ class TripEngine:
         trip = self.trip
         if trip is None or self._route == trip.destination:
             return
-        if not self._route_stable(reading):
+        # A parked car can set its own next stop, home after a charge most often,
+        # so a route counts only once the car drives it.
+        if not self.driving or not self._route_stable(reading):
             return
         previous = trip.destination
         trip.destination = self._route
+        # Legs can follow each other without the trip ending, and each new
+        # destination is a new approach.
+        trip.heading_home_sent = False
+        trip.thresholds_sent = []
         if not previous:
             kind = EVENT_DESTINATION_SET
         elif not self._route:
@@ -339,10 +352,24 @@ class TripEngine:
             return STATE_CHARGING if last.charging else STATE_PARKED
         if not self._route or not self._route_stable(last):
             return STATE_DRIVING
-        minutes = last.minutes_to_arrival
-        if minutes is not None and self.thresholds and minutes <= self.thresholds[0]:
-            return STATE_ARRIVING
-        return STATE_NAVIGATING
+        return STATE_ARRIVING if self._arriving else STATE_NAVIGATING
+
+    def _is_arriving(self, reading: Reading) -> bool:
+        """Whether the car is within the first threshold, held a little once in."""
+        if (
+            not self.driving
+            or not self._route
+            or not self._route_stable(reading)
+            or not self.thresholds
+        ):
+            return False
+        minutes = reading.minutes_to_arrival
+        if minutes is None:
+            # The arrival time has passed, or isn't being sent, with the route
+            # still set.
+            return self._arriving
+        hold = ARRIVING_HOLD_MINUTES if self._arriving else 0
+        return minutes <= self.thresholds[0] + hold
 
     def as_dict(self) -> dict[str, Any]:
         """The engine's memory as plain data for ``Store``."""

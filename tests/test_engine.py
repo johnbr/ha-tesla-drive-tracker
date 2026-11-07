@@ -122,6 +122,62 @@ def test_replayed_route_fires_nothing() -> None:
     assert engine.state == "arriving"
 
 
+def test_a_route_set_while_parked_waits_for_the_car_to_drive() -> None:
+    """Parked at a charger, the car set its own route home inside the minutes
+    before the trip ended."""
+    engine = TripEngine()
+    feed(engine, 0, 60, **MOVING)
+    assert feed(engine, 60, 230, destination="Home", **PARKED) == []
+    assert engine.trip is not None
+    assert not engine.driving
+    assert feed(engine, 230, 260, destination="Home", **MOVING) == [
+        "destination_set",
+        "heading_home",
+    ]
+
+
+def test_each_destination_gets_its_own_arrival() -> None:
+    """Rideshare legs follow each other without a stop long enough to end the
+    trip."""
+    engine = TripEngine()
+    feed(engine, 0, 60, **MOVING)
+    names = feed(
+        engine, 60, 200, destination="Cafe", minutes_to_arrival=8.0, **MOVING
+    )
+    names += feed(
+        engine, 200, 300, destination="Cafe", minutes_to_arrival=4.0, **MOVING
+    )
+    names += feed(
+        engine, 300, 450, destination="Home", minutes_to_arrival=8.0, **MOVING
+    )
+    names += feed(
+        engine, 450, 500, destination="Home", minutes_to_arrival=4.0, **MOVING
+    )
+    assert names == [
+        "destination_set",
+        "arriving",
+        "destination_changed",
+        "heading_home",
+        "arriving",
+    ]
+
+
+def test_arriving_holds_while_the_arrival_slips_a_minute() -> None:
+    engine = TripEngine()
+    feed(engine, 0, 60, **MOVING)
+    feed(engine, 60, 200, destination="Cafe", minutes_to_arrival=6.0, **MOVING)
+    assert engine.state == "navigating"
+    feed(engine, 200, 210, destination="Cafe", minutes_to_arrival=4.9, **MOVING)
+    assert engine.state == "arriving"
+    feed(engine, 210, 220, destination="Cafe", minutes_to_arrival=5.9, **MOVING)
+    assert engine.state == "arriving"
+    # The arrival time has passed with the route still set.
+    feed(engine, 220, 230, destination="Cafe", **MOVING)
+    assert engine.state == "arriving"
+    feed(engine, 230, 240, destination="Cafe", minutes_to_arrival=6.5, **MOVING)
+    assert engine.state == "navigating"
+
+
 def test_a_jump_past_the_threshold_is_not_a_crossing() -> None:
     engine = TripEngine()
     feed(engine, 0, 200, destination="Home", minutes_to_arrival=40.0, **MOVING)
