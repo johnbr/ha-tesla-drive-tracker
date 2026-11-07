@@ -42,6 +42,8 @@ const RESUBSCRIBE_MS = 3000;
 /** How long after a zoom starts to leave the marker alone, Leaflet only. */
 const ZOOM_GUARD_MS = 2000;
 const FIT_PAD = 0.2;
+/** How often a moving car's view catches up with it, in seconds. */
+const REFIT_SECONDS = 20;
 const ZONE_COLOR = "#ff9800";
 
 /** mdi:crosshairs-gps */
@@ -136,6 +138,7 @@ export class TeslaDriveTrackerCard extends LitElement {
   private _userAt: number | null = null;
   private _artKey = "";
   private _fitKey = "";
+  private _fitAt = 0;
   private _lastRoute: LatLng[] | null = null;
   private _reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)");
   private _motion = new CarMotion(predict, turnTowards, () => this._smooth());
@@ -436,7 +439,11 @@ export class TeslaDriveTrackerCard extends LitElement {
     if (!el || !this._surface || !drive || !config || drive.latitude === null || drive.longitude === null) return;
 
     const now = Date.now() / 1000;
-    const action = viewAction(config.follow, drive.driving, this._userAt, config.recenter_after, now);
+    const pin: LatLng[] =
+      drive.destination_latitude !== null && drive.destination_longitude !== null
+        ? [[drive.destination_latitude, drive.destination_longitude]]
+        : [];
+    const action = viewAction(config.follow, drive.driving, this._userAt, config.recenter_after, now, pin.length > 0);
     // With `off` there is nothing to return to, so no button either.
     const following = action !== "none" || config.follow === "off";
     if (following !== this._following) this._following = following;
@@ -453,16 +460,15 @@ export class TeslaDriveTrackerCard extends LitElement {
         el.panTo(position);
       }
     } else if (action === "fit") {
-      const pin: LatLng[] =
-        drive.destination_latitude !== null && drive.destination_longitude !== null
-          ? [[drive.destination_latitude, drive.destination_longitude]]
-          : [];
       const points = [position, ...pin, ...(this._lastRoute ?? [])];
-      // Fit when the picture changes, not on every fix.
+      // Fit when the picture changes or the car has moved on, not on every fix.
       const key = JSON.stringify([pin, points.length > 2, this._drive?.trip_started_at]);
-      if (key !== this._fitKey) {
+      if (key !== this._fitKey || (drive.driving && now - this._fitAt >= REFIT_SECONDS)) {
         this._fitKey = key;
-        el.fitBounds(points, points.length > 1 ? { pad: FIT_PAD } : { zoom: 16, pad: 0 });
+        this._fitAt = now;
+        // Close to the pin the fit would otherwise zoom right in.
+        const closest = drive.driving && config.speed_zoom ? { zoom: zoomForSpeed(drive.speed) } : {};
+        el.fitBounds(points, points.length > 1 ? { pad: FIT_PAD, ...closest } : { zoom: 16, pad: 0 });
       }
     }
   }

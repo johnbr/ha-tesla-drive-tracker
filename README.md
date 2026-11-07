@@ -49,6 +49,9 @@ to 15 seconds. After 30 seconds with no fix it says how old the last one is.
 | Info panel | `hud` (`full`, `compact`, `off`), `hud_fields`, `hud_position`, `units` |
 | Other | `entry_id`, to choose a car when you have more than one |
 
+With `follow: auto`, the map stays close to a car that has nowhere set, and frames the
+car, route and destination when it does. A hidden destination is never framed.
+
 The model and paint come from the car when it reports them. `ExteriorColor`,
 `RoofColor` and `CarType` can be added from the Tesla Fleet Telemetry signal catalog,
 and the integration's options can set both by hand. A picture must be a path on this

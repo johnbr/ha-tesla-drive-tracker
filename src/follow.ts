@@ -1,8 +1,9 @@
 /**
  * What the map should do with its view.
  *
- * Import-free. `auto` follows the car while it drives and shows the whole trip
- * otherwise. Touching the map hands it to the user until `recenter_after` passes.
+ * Import-free. `auto` follows the car while it drives with nowhere set, and
+ * otherwise shows the whole trip, so a route keeps the car and the pin in view.
+ * Touching the map hands it to the user until `recenter_after` passes.
  */
 
 export type FollowMode = "auto" | "car" | "fit" | "off";
@@ -13,13 +14,14 @@ export function viewAction(
   driving: boolean,
   userAt: number | null,
   recenterAfter: number,
-  now: number
+  now: number,
+  destination = false
 ): ViewAction {
   if (follow === "off") return "none";
   if (userAt !== null && (recenterAfter === 0 || now - userAt < recenterAfter)) return "none";
   if (follow === "fit") return "fit";
   if (follow === "car") return "car";
-  return driving ? "car" : "fit";
+  return driving && !destination ? "car" : "fit";
 }
 
 /** A wider view at speed, so the road ahead stays on screen. */
