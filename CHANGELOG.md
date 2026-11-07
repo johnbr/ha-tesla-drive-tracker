@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/johnbr/ha-tesla-drive-tracker/compare/v0.1.0...v0.1.1) (2026-11-07)
+
+
+### Bug Fixes
+
+* tie route events to driving and arrivals to each destination ([#10](https://github.com/johnbr/ha-tesla-drive-tracker/issues/10)) ([b041aa3](https://github.com/johnbr/ha-tesla-drive-tracker/commit/b041aa3a4ee0235e8c471e3ba14aeed7d24f933c))
+
 ## [0.1.0](https://github.com/johnbr/ha-tesla-drive-tracker/compare/v0.0.1...v0.1.0) (2026-11-07)
 
 
