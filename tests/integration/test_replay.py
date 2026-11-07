@@ -52,7 +52,7 @@ async def test_parking_ends_the_trip_when_the_car_goes_quiet(car: Car) -> None:
     ]
 
 
-async def test_arrival_fires_once_per_trip_on_a_stable_route(car: Car) -> None:
+async def test_arrival_fires_once_per_destination_on_a_stable_route(car: Car) -> None:
     await replay(car, "home_arrival")
     arriving = [event for event in car.events if event.type == "arriving"]
     assert len(arriving) == 1
@@ -70,8 +70,9 @@ async def test_a_replayed_route_fires_no_arrival(car: Car) -> None:
     ]
     arrivals = [at for at, kind in timeline if kind == "arriving"]
     assert len(changes) >= 6
-    # The one arrival in over 90 minutes of replays, and nothing lands on a change.
-    assert len(arrivals) == 1
+    # One arrival for each of the three stops reached in over 90 minutes of
+    # replays, and nothing lands on a change.
+    assert len(arrivals) == 3
     assert all(at not in changes for at in arrivals)
 
 

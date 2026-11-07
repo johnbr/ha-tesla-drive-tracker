@@ -108,6 +108,7 @@ def build_view(
             None
             if hidden
             else trip is not None
+            and engine.driving
             and is_home(trip.destination)
             and is_home(engine.route)
         ),

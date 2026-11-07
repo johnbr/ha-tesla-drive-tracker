@@ -32,8 +32,8 @@ class Trail:
 
     @property
     def length_km(self) -> float | None:
-        """How far the trail runs, or ``None`` before it has two points."""
-        return self._km if len(self.points) > 1 else None
+        """How far the trail runs, or ``None`` before it has a point."""
+        return self._km if self.points else None
 
     def add(self, latitude: float, longitude: float, now: float) -> bool:
         """Keep a point if the car has moved, returning whether it was kept."""
