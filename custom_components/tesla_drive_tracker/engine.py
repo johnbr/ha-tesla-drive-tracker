@@ -77,6 +77,7 @@ class Reading:
     destination: str | None = None
     minutes_to_arrival: float | None = None
     odometer: float | None = None
+    travelled: float | None = None
     battery: float | None = None
     at_home: bool | None = None
     online: bool = True
@@ -116,6 +117,19 @@ def driving_evidence(reading: Reading) -> bool | None:
         and not reading.charging
         and speed >= CREEP_SPEED_MPH
     )
+
+
+def trip_miles(
+    trip: Trip, odometer: float | None, travelled: float | None
+) -> float | None:
+    """How far a trip has gone, by the odometer if it was read at both ends.
+
+    Some cars only have a polled odometer, which is rarely fresh as a trip starts,
+    so the path driven stands in.
+    """
+    if odometer is not None and trip.start_odometer is not None:
+        return odometer - trip.start_odometer
+    return travelled
 
 
 def is_home(name: str) -> bool:
@@ -230,9 +244,9 @@ class TripEngine:
     def _ended(self, trip: Trip, reading: Reading) -> DriveEvent:
         ended_at = self._idle_since or reading.timestamp
         duration = ended_at - trip.started_at
-        distance = None
-        if reading.odometer is not None and trip.start_odometer is not None:
-            distance = round(reading.odometer - trip.start_odometer, 1)
+        distance = trip_miles(trip, reading.odometer, reading.travelled)
+        if distance is not None:
+            distance = round(distance, 1)
         battery_used = None
         if reading.battery is not None and trip.start_battery is not None:
             battery_used = round(trip.start_battery - reading.battery, 1)

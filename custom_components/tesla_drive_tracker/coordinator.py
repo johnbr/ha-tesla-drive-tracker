@@ -304,6 +304,7 @@ class DriveCoordinator(DataUpdateCoordinator[DriveView]):
                 if values[ROLE_POSITION] is None
                 else values[ROLE_POSITION] == STATE_HOME
             ),
+            travelled=self._travelled(),
         )
         events = self._engine.update(reading)
         fix = self._fix(
@@ -337,6 +338,7 @@ class DriveCoordinator(DataUpdateCoordinator[DriveView]):
             traffic_delay=number(values[ROLE_TRAFFIC_DELAY]),
             route_line=self._route(values[ROLE_ROUTE_LINE]),
             odometer=reading.odometer,
+            travelled=self._travelled(),
             last_trip=self.last_trip,
             latitude=position.latitude if located else None,
             longitude=position.longitude if located else None,
@@ -348,6 +350,15 @@ class DriveCoordinator(DataUpdateCoordinator[DriveView]):
         )
         self._save_later(now, bool(events))
         return view
+
+    def _travelled(self) -> float | None:
+        """The trail's length in the engine's miles."""
+        length = self.trail.length_km
+        if length is None:
+            return None
+        return DistanceConverter.convert(
+            length, UnitOfLength.KILOMETERS, UnitOfLength.MILES
+        )
 
     def _look(self, now: float) -> dict[str, str | None]:
         """How the car is drawn. Paint doesn't go stale, so restored values do."""

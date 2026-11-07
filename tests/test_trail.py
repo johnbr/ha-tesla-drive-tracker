@@ -25,3 +25,34 @@ def test_a_full_trail_thins_its_oldest_half() -> None:
     assert len(trail.points) < MAX_POINTS
     assert trail.points[0] == (10.0, 20.0, 0)
     assert trail.points[-1] == (10 + MAX_POINTS / 1000, 20.0, MAX_POINTS)
+
+
+def test_length_needs_two_points() -> None:
+    trail = Trail()
+    assert trail.length_km is None
+    trail.add(10.0, 20.0, 1)
+    assert trail.length_km is None
+
+
+def test_length_adds_up_and_clears() -> None:
+    trail = Trail()
+    trail.add(10.0, 20.0, 1)
+    trail.add(10.01, 20.0, 2)
+    trail.add(10.02, 20.0, 3)
+    assert round(trail.length_km, 2) == 2.22
+    trail.clear()
+    assert trail.length_km is None
+
+
+def test_length_survives_a_restart() -> None:
+    trail = Trail()
+    trail.add(10.0, 20.0, 1)
+    trail.add(10.01, 20.0, 2)
+    assert Trail(list(trail.points)).length_km == trail.length_km
+
+
+def test_thinning_keeps_the_length() -> None:
+    trail = Trail()
+    for index in range(MAX_POINTS + 1):
+        trail.add(10 + index / 1000, 20.0, index)
+    assert round(trail.length_km) == round(MAX_POINTS * 0.1112)

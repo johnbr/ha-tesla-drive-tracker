@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from tesla_drive_tracker_isolated.sources import (
     FLEET,
+    ROLE_DESTINATION,
     ROLE_ROUTE_LINE,
     ROLE_SPEED,
     ROLES,
@@ -70,3 +71,37 @@ def test_an_old_polled_speed_is_not_a_speed() -> None:
 def test_invalid_states_are_skipped() -> None:
     samples = [(PUSHED, Sample("unavailable", 2010.0)), (POLLED, Sample(5.0, 2000.0))]
     assert pick(samples, 2020.0, STARTED) == 5.0
+
+
+ROUTE_PUSHED, ROUTE_POLLED = ROLES[ROLE_DESTINATION]
+
+
+def test_a_polled_zone_word_does_not_end_a_named_route() -> None:
+    """A poll landed mid-drive and blanked the route home on a real drive."""
+    for word in ("home", "not_home"):
+        samples = [
+            (ROUTE_PUSHED, Sample("Home", 2000.0)),
+            (ROUTE_POLLED, Sample(word, 2012.0)),
+        ]
+        assert pick(samples, 2013.0, STARTED) == "Home"
+
+
+def test_a_polled_route_name_still_wins_when_fresher() -> None:
+    samples = [
+        (ROUTE_PUSHED, Sample("Place A", 2000.0)),
+        (ROUTE_POLLED, Sample("Place B", 2012.0)),
+    ]
+    assert pick(samples, 2013.0, STARTED) == "Place B"
+
+
+def test_the_pushed_tracker_can_still_end_a_route() -> None:
+    samples = [
+        (ROUTE_PUSHED, Sample("home", 2020.0)),
+        (ROUTE_POLLED, Sample("Place B", 2012.0)),
+    ]
+    assert pick(samples, 2021.0, STARTED) == "home"
+
+
+def test_a_polled_zone_word_counts_when_nothing_else_reports() -> None:
+    samples = [(ROUTE_POLLED, Sample("home", 2012.0))]
+    assert pick(samples, 2013.0, STARTED) == "home"

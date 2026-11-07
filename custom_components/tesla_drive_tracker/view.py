@@ -15,7 +15,7 @@ from __future__ import annotations
 from dataclasses import dataclass, fields
 from typing import Any
 
-from .engine import TripEngine, is_home
+from .engine import TripEngine, is_home, trip_miles
 from .pairing import STATUS_HIDDEN, STATUS_NONE, STATUS_PAIRED, DestinationFix
 from .privacy import coarse_distance, coarse_minutes
 from .route_line import RouteLine, ends_at
@@ -69,6 +69,7 @@ def build_view(
     traffic_delay: float | None = None,
     route_line: RouteLine | None = None,
     odometer: float | None = None,
+    travelled: float | None = None,
     last_trip: dict[str, Any] | None = None,
     **car: float | str | None,
 ) -> DriveView:
@@ -89,9 +90,7 @@ def build_view(
     trip_duration = held.get("duration")
     if trip is not None:
         trip_duration = now - trip.started_at
-        trip_distance = None
-        if odometer is not None and trip.start_odometer is not None:
-            trip_distance = odometer - trip.start_odometer
+        trip_distance = trip_miles(trip, odometer, travelled)
 
     return DriveView(
         state=engine.state,
