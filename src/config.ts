@@ -17,7 +17,8 @@ export const ROOFS = ["auto", "glass", "body"] as const;
 export const MARKER_STYLES = ["car", "arrow", "dot"] as const;
 export const FOLLOWS = ["auto", "car", "fit", "off"] as const;
 export const HUDS = ["full", "compact", "off"] as const;
-export const HUD_POSITIONS = ["top", "bottom"] as const;
+/** `above` and `below` sit outside the map; `top` and `bottom` float over it. */
+export const HUD_POSITIONS = ["below", "above", "top", "bottom"] as const;
 export const UNITS = ["auto", "mi", "km"] as const;
 export const WHEN_PARKED = ["map", "compact", "hide"] as const;
 export const HUD_FIELDS = [
@@ -78,7 +79,7 @@ export const DEFAULTS: CardConfig = {
   trail_color: "#9c6ade",
   hud: "full",
   hud_fields: ["destination", "eta", "minutes", "distance", "speed", "battery", "arrival_battery", "traffic_delay"],
-  hud_position: "bottom",
+  hud_position: "below",
   units: "auto",
   when_parked: "map",
   smooth_motion: true,
