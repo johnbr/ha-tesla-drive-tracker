@@ -1,12 +1,30 @@
 # Tesla Drive Tracker for Home Assistant
 
-A Home Assistant integration with a bundled Lovelace card that will show a Tesla's
+A Home Assistant integration with a bundled Lovelace card that shows a Tesla's
 drive live on a map: the car pointing the way it's going, the real route line, the
-destination, ETA, distance left and battery at arrival. It will also give
-automations a clean set of hooks for trips and arrivals.
+destination, ETA, distance left and battery at arrival. Its entities give
+automations hooks for trips and arrivals.
 
-> **This integration is still being built.** The backend and the card work. The
-> automation hooks are still to come, and there are no releases yet.
+## Installation
+
+### HACS
+
+1. Open HACS in Home Assistant and search for **Tesla Drive Tracker**.
+2. Download it, then restart Home Assistant.
+3. Go to **Settings → Devices & services → Add integration** and choose
+   **Tesla Drive Tracker**. Pick the car to follow.
+
+If it doesn't show up in the search yet, add
+`https://github.com/johnbr/ha-tesla-drive-tracker` as a custom repository of type
+**Integration** in HACS first.
+
+### Manual
+
+Copy `custom_components/tesla_drive_tracker` from the
+[latest release](https://github.com/johnbr/ha-tesla-drive-tracker/releases/latest)
+into the `custom_components` folder of your Home Assistant configuration, then
+restart and add the integration as above. The release already contains the built
+card.
 
 ## What it adds
 
