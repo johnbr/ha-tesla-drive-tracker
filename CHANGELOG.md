@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/johnbr/ha-tesla-drive-tracker/compare/v0.1.1...v0.1.2) (2026-11-12)
+
+
+### Bug Fixes
+
+* put the info panel below the map by default so it never covers the car ([#12](https://github.com/johnbr/ha-tesla-drive-tracker/issues/12)) ([e22d646](https://github.com/johnbr/ha-tesla-drive-tracker/commit/e22d646737e0e9fe5d5d4e1321e03bdd246e6daa))
+
 ## [0.1.1](https://github.com/johnbr/ha-tesla-drive-tracker/compare/v0.1.0...v0.1.1) (2026-11-07)
 
 
