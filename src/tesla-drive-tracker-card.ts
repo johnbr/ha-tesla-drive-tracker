@@ -559,7 +559,10 @@ export class TeslaDriveTrackerCard extends LitElement {
       const battery = drive.battery === null ? "" : ` · ${Math.round(drive.battery)}%`;
       return html`<ha-card><div class="compact-line">${drive.state}${battery}</div></ha-card>`;
     }
+    const hud = this._renderHud(drive, config);
+    const outside = config.hud_position === "above" || config.hud_position === "below";
     return html`<ha-card>
+      ${outside && config.hud_position === "above" ? hud : nothing}
       <div
         class="map-wrap"
         style="height:${config.height}px"
@@ -567,13 +570,14 @@ export class TeslaDriveTrackerCard extends LitElement {
         @wheel=${this._onUserMove}
       >
         <ha-map .autoFit=${false} .themeMode=${"auto"}></ha-map>
-        ${this._renderHud(drive, config)} ${this._renderStale(drive)}
+        ${outside ? nothing : hud} ${this._renderStale(drive)}
         ${this._following
           ? nothing
           : html`<button class="recentre" title="Recentre" @click=${this._onRecentre}>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d=${RECENTRE_PATH}></path></svg>
             </button>`}
       </div>
+      ${outside && config.hud_position === "below" ? hud : nothing}
     </ha-card>`;
   }
 }

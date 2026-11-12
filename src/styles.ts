@@ -38,6 +38,15 @@ export const cardStyles = css`
   .hud.bottom {
     bottom: 8px;
   }
+  /* Outside the map, so it never covers the car: framing a trip puts the car at
+     the map's edge, under a floating panel whenever it heads away from it. */
+  .hud.below,
+  .hud.above {
+    position: static;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
   .destination {
     flex-basis: 100%;
     font-weight: 500;

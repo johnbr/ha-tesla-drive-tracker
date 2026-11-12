@@ -46,7 +46,7 @@ to 15 seconds. After 30 seconds with no fix it says how old the last one is.
 | Car | `model`, `color` (a Tesla paint name or hex), `roof`, `marker_style` (`car`, `arrow`, `dot`), `marker_size`, `image` and `image_nose` for your own picture |
 | Map | `follow` (`auto`, `car`, `fit`, `off`), `recenter_after`, `speed_zoom`, `height`, `show_zones`, `when_parked` (`map`, `compact`, `hide`), `smooth_motion` |
 | Lines | `show_route`, `route_color`, `show_trail`, `trail_color`, `trail_minutes` |
-| Info panel | `hud` (`full`, `compact`, `off`), `hud_fields`, `hud_position`, `units` |
+| Info panel | `hud` (`full`, `compact`, `off`), `hud_fields`, `hud_position` (`below`, `above`, or over the map: `top`, `bottom`), `units` |
 | Other | `entry_id`, to choose a car when you have more than one |
 
 With `follow: auto`, the map stays close to a car that has nowhere set, and frames the
