@@ -32,9 +32,15 @@ test("no heading and no route means no guess", () => {
 });
 
 test("a car on its route follows the route, not its heading", () => {
-  const ahead = predict({ position: at(10.001), heading: 90, speed: 60 }, NORTH, 10);
+  const ahead = predict({ position: at(10.001), heading: 30, speed: 60 }, NORTH, 10);
   assert.ok(ahead[0] > 10.001);
   assert.ok(Math.abs(ahead[1] - 20) < 1e-9);
+});
+
+test("a car facing across its route is not slid along it", () => {
+  const ahead = predict({ position: at(10.001), heading: 90, speed: 60 }, NORTH, 10);
+  assert.ok(ahead[1] > 20);
+  assert.ok(Math.abs(ahead[0] - 10.001) < 1e-9);
 });
 
 test("a car that has left its route falls back on its heading", () => {
@@ -74,4 +80,16 @@ test("turning takes the short way round", () => {
   assert.equal(Math.round(turnTowards(350, 10, 0.5)), 0);
   assert.equal(Math.round(turnTowards(10, 350, 0.5)), 0);
   assert.equal(turnTowards(90, 180, 1), 180);
+});
+
+test("a car heading north is not put on a road crossing its path", () => {
+  // Due east, then a long way north from the crossing.
+  const route: LatLng[] = [
+    [0, -0.001],
+    [0, 0],
+    [0.01, 0],
+  ];
+  const near = nearestOnLine(route, [-0.00005, -0.0002], 0);
+  assert.equal(near?.index, 1);
+  assert.equal(nearestOnLine(route, [-0.00005, -0.0002])?.index, 0);
 });

@@ -24,6 +24,8 @@ export const PREDICT_MAX_SECONDS = 15;
 export const PREDICT_MIN_MPH = 2;
 /** Further than this from its line, the car has left the route. */
 const ON_ROUTE_METRES = 60;
+/** Further than this from the car's heading, a stretch of route is not the one it is on. */
+const ON_ROUTE_DEGREES = 60;
 
 const EARTH_METRES = 6371000;
 const METRES_PER_SECOND_PER_MPH = 0.44704;
@@ -38,11 +40,23 @@ export function metres(a: LatLng, b: LatLng): number {
   return EARTH_METRES * Math.hypot(x, y);
 }
 
-/** The point on a line closest to `point`, with the segment it lies on. */
-export function nearestOnLine(line: LatLng[], point: LatLng): { index: number; at: LatLng; off: number } | null {
+/**
+ * The point on a line closest to `point`, with the segment it lies on. Given a
+ * heading, only segments running within ON_ROUTE_DEGREES of it count: at a
+ * crossing, or where a route comes back along the same road, the closest
+ * segment can run across or against the car.
+ */
+export function nearestOnLine(
+  line: LatLng[],
+  point: LatLng,
+  heading: number | null = null
+): { index: number; at: LatLng; off: number } | null {
   let best: { index: number; at: LatLng; off: number } | null = null;
   for (let index = 0; index < line.length - 1; index += 1) {
     const [a, b] = [line[index], line[index + 1]];
+    if (heading !== null && (a[0] !== b[0] || a[1] !== b[1]) && angleBetween(bearing(a, b), heading) > ON_ROUTE_DEGREES) {
+      continue;
+    }
     const scale = Math.cos(radians(a[0]));
     const dx = (b[1] - a[1]) * scale;
     const dy = b[0] - a[0];
@@ -92,7 +106,7 @@ export function predict(fix: Fix, route: LatLng[] | null, seconds: number): LatL
   if (speed < PREDICT_MIN_MPH || seconds <= 0) return fix.position;
   const distance = speed * METRES_PER_SECOND_PER_MPH * Math.min(seconds, PREDICT_MAX_SECONDS);
   if (route && route.length > 1) {
-    const near = nearestOnLine(route, fix.position);
+    const near = nearestOnLine(route, fix.position, fix.heading);
     if (near && near.off <= ON_ROUTE_METRES) return walkLine(route, near, distance);
   }
   if (fix.heading === null) return fix.position;
@@ -110,6 +124,11 @@ export function routeAhead(route: LatLng[], position: LatLng | null): LatLng[] {
   const near = nearestOnLine(route, position);
   if (near === null || near.off > ON_ROUTE_METRES) return route;
   return [near.at, ...route.slice(near.index + 1)];
+}
+
+/** Degrees between two headings, the shorter way round. */
+function angleBetween(a: number, b: number): number {
+  return Math.abs(((a - b + 540) % 360) - 180);
 }
 
 /** The shorter way round from one heading to another. */
