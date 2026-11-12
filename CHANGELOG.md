@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/johnbr/ha-tesla-drive-tracker/compare/v0.1.2...v0.1.3) (2026-11-12)
+
+
+### Bug Fixes
+
+* steer and pace the car with speed and heading between position fixes ([#15](https://github.com/johnbr/ha-tesla-drive-tracker/issues/15)) ([de8187b](https://github.com/johnbr/ha-tesla-drive-tracker/commit/de8187be79dbe130277ff9b9e87db61624e96dda))
+
 ## [0.1.2](https://github.com/johnbr/ha-tesla-drive-tracker/compare/v0.1.1...v0.1.2) (2026-11-12)
 
 
