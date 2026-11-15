@@ -18,6 +18,10 @@ export interface Look {
 }
 
 const VIEW = "0 0 64 128";
+/** How far the white rim and the dark edge reach beyond the body, in drawing units. */
+const RIM = 4.5;
+const EDGE = 6;
+const SHADOW_BLUR = 2.7;
 
 interface Shape {
   body: string;
@@ -124,11 +128,20 @@ export function carSvg(model: string | null | undefined, look: Look): string {
   const mirrors = [mirrorX, 64 - mirrorX]
     .map((x) => `<ellipse cx="${x}" cy="${mirrorY}" rx="4" ry="2.4"/>`)
     .join("");
-  // White first, then a line chosen against the paint, so the car stands off both
-  // pale roads and dark tarmac.
+  const silhouette = `${mirrors}<path d="${shape.body}"/>`;
+  // From the outside in: a soft shadow, a near-black edge, a white rim, then a
+  // line chosen against the paint, so the car lifts off pale roads, dark tarmac
+  // and busy satellite imagery alike. In proportion to the car these are the
+  // rim, edge and shadow of the top-down pictures on the author's own Home
+  // Assistant driving maps (rim 3.7% of the car's length, edge 1.2% beyond it).
   return (
     `<svg viewBox="${VIEW}" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">` +
-    `<g fill="#fff" stroke="#fff" stroke-width="5" stroke-linejoin="round">${mirrors}<path d="${shape.body}"/></g>` +
+    `<defs><filter id="tdt-car-shadow" x="-40%" y="-25%" width="180%" height="150%">` +
+    `<feGaussianBlur stdDeviation="${SHADOW_BLUR}"/></filter></defs>` +
+    `<g fill="#000" stroke="#000" stroke-width="${EDGE * 2}" stroke-linejoin="round" opacity="0.7" ` +
+    `transform="translate(0.9 1.5)" filter="url(#tdt-car-shadow)">${silhouette}</g>` +
+    `<g fill="#0f0f0f" stroke="#0f0f0f" stroke-width="${EDGE * 2}" stroke-linejoin="round">${silhouette}</g>` +
+    `<g fill="#fff" stroke="#fff" stroke-width="${RIM * 2}" stroke-linejoin="round">${silhouette}</g>` +
     `<g fill="${look.paint}" stroke="${look.outline}" stroke-width="2" stroke-linejoin="round">${mirrors}<path d="${shape.body}"/></g>` +
     paths(shape.seams, `fill="none" stroke="${look.outline}" stroke-width="0.8" opacity="0.55"`) +
     `<path d="${shape.windscreen}" fill="#1b2127"/>` +
