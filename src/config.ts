@@ -67,7 +67,7 @@ export const DEFAULTS: CardConfig = {
   roof: "auto",
   image_nose: 0,
   marker_style: "car",
-  marker_size: 64,
+  marker_size: 51,
   follow: "auto",
   recenter_after: 20,
   speed_zoom: true,
