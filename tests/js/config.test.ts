@@ -38,3 +38,14 @@ test("pictures are this Home Assistant's own or https", () => {
   assert.ok(!safeImage("data:image/svg+xml,<svg/>"));
   assert.throws(() => parseConfig({ image: "javascript:alert(1)" }), /image must be/);
 });
+
+test("Google Maps needs a key, and the key can't carry anything else", () => {
+  assert.equal(parseConfig({}).map_provider, "home_assistant");
+  assert.throws(() => parseConfig({ map_provider: "google" }), /needs a google_api_key/);
+  const key = "AIzaSyA-example_key_0123456789abcdefg";
+  const config = parseConfig({ map_provider: "google", google_api_key: key, google_map_type: "hybrid" });
+  assert.equal(config.google_api_key, key);
+  assert.equal(config.google_map_type, "hybrid");
+  assert.throws(() => parseConfig({ google_api_key: "abc&callback=alert" }), /google_api_key must be/);
+  assert.throws(() => parseConfig({ google_map_type: "street" }), /google_map_type must be one of/);
+});

@@ -21,6 +21,8 @@ export const HUDS = ["full", "compact", "off"] as const;
 export const HUD_POSITIONS = ["below", "above", "top", "bottom"] as const;
 export const UNITS = ["auto", "mi", "km"] as const;
 export const WHEN_PARKED = ["map", "compact", "hide"] as const;
+export const MAP_PROVIDERS = ["home_assistant", "google"] as const;
+export const GOOGLE_MAP_TYPES = ["roadmap", "satellite", "hybrid", "terrain"] as const;
 export const HUD_FIELDS = [
   "destination",
   "eta",
@@ -59,6 +61,10 @@ export interface CardConfig {
   units: (typeof UNITS)[number];
   when_parked: (typeof WHEN_PARKED)[number];
   smooth_motion: boolean;
+  map_provider: (typeof MAP_PROVIDERS)[number];
+  google_api_key?: string;
+  google_map_type: (typeof GOOGLE_MAP_TYPES)[number];
+  show_traffic: boolean;
 }
 
 export const DEFAULTS: CardConfig = {
@@ -83,6 +89,9 @@ export const DEFAULTS: CardConfig = {
   units: "auto",
   when_parked: "map",
   smooth_motion: true,
+  map_provider: "home_assistant",
+  google_map_type: "roadmap",
+  show_traffic: false,
 };
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
@@ -156,6 +165,14 @@ const CHECKS: Record<string, (key: string, value: unknown) => unknown> = {
   units: (key, value) => oneOf(key, value, UNITS),
   when_parked: (key, value) => oneOf(key, value, WHEN_PARKED),
   smooth_motion: aBoolean,
+  map_provider: (key, value) => oneOf(key, value, MAP_PROVIDERS),
+  google_api_key: (key, value) => {
+    // It goes into a URL, so only the characters a Google key has.
+    if (typeof value === "string" && /^[A-Za-z0-9_-]{20,100}$/.test(value)) return value;
+    throw new Error(`${key} must be a Google Maps API key`);
+  },
+  google_map_type: (key, value) => oneOf(key, value, GOOGLE_MAP_TYPES),
+  show_traffic: aBoolean,
 };
 
 /** Validate a dashboard's config, filling in what it leaves out. */
@@ -167,6 +184,9 @@ export function parseConfig(raw: unknown): CardConfig {
     const check = CHECKS[key];
     if (!check) throw new Error(`Unknown option: ${key}`);
     parsed[key] = check(key, value);
+  }
+  if (parsed.map_provider === "google" && !parsed.google_api_key) {
+    throw new Error("map_provider: google needs a google_api_key");
   }
   return parsed as unknown as CardConfig;
 }

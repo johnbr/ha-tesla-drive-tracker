@@ -10,6 +10,7 @@
 import { LitElement, html, nothing, type TemplateResult } from "lit";
 import { property, state } from "lit/decorators.js";
 import { CARD_TYPE, EDITOR_TYPE, parseConfig, type CardConfig, type HudField } from "./config";
+import { GoogleSurface, GoogleView, loadGoogleMaps, type GoogleMaps } from "./google-map";
 import { ensureHaMap, whenEngineReady, type HaMapElement } from "./ha-map";
 import { viewAction, zoomForSpeed } from "./follow";
 import {
@@ -27,7 +28,14 @@ import { CarMotion } from "./motion";
 import { outlineColor, paintColor, roofColor } from "./paint";
 import { applyMessage, isStale, visibleTrail, type DriveState, type FeedMessage } from "./state";
 import { cardStyles, markerStyles } from "./styles";
-import { HaSurface, engineProblem, type MarkerArt, type ZoneCircle } from "./surface";
+import {
+  HaSurface,
+  engineProblem,
+  type MapSurface,
+  type MapView,
+  type MarkerArt,
+  type ZoneCircle,
+} from "./surface";
 
 /** Read off this module's own URL, so the bundle has no version baked in. */
 const VERSION = new URL(import.meta.url).searchParams.get("v") ?? "dev";
@@ -65,6 +73,7 @@ export interface HomeAssistant {
   config?: { unit_system?: { length?: string } };
   locale?: { language?: string; time_format?: string };
   language?: string;
+  themes?: { darkMode?: boolean };
   states: Record<string, { attributes: Record<string, unknown> } | undefined>;
 }
 
@@ -124,7 +133,12 @@ export class TeslaDriveTrackerCard extends LitElement {
   /** Deliberately not reactive: assigning it must not schedule a render. */
   private _hass?: HomeAssistant;
 
-  private _surface?: HaSurface;
+  private _surface?: MapSurface;
+  /** Which provider, and key, `_mapAvailable` is about. */
+  private _mapFor?: string;
+  private _googleMaps?: GoogleMaps;
+  /** Kept across reconnects and config changes: each new one is a billed load. */
+  private _google?: GoogleView;
   private _syncing = false;
   private _resync = false;
   private _unsubscribe?: () => Promise<void>;
@@ -161,6 +175,8 @@ export class TeslaDriveTrackerCard extends LitElement {
     this._fitKey = "";
     this._surface?.destroy();
     this._surface = undefined;
+    if (next.map_provider !== "google") this._google = undefined;
+    if (this.isConnected) this._loadMap();
     if (carChanged && this._hass) {
       this._unsubscribeFeed();
       this._subscribe();
@@ -187,20 +203,36 @@ export class TeslaDriveTrackerCard extends LitElement {
   connectedCallback(): void {
     super.connectedCallback();
     ensureMarkerStyles();
-    if (this._mapAvailable === null) {
-      void ensureHaMap().then((ok) => {
-        this._mapAvailable = ok;
-      });
-    }
+    this._loadMap();
     // A WebGL context loss swaps MapLibre for Leaflet in place, taking every
     // marker with it while the card stays connected and nothing re-renders.
     this._engineWatch = window.setInterval(() => {
       const engine = this._mapEl()?._engine;
-      if (this._surface && engine && engine !== this._surface.engine) void this._syncMap();
+      if (this._surface instanceof HaSurface && engine && engine !== this._surface.engine) void this._syncMap();
     }, ENGINE_WATCH_MS);
     this._refresh = window.setInterval(() => this._tick(), REFRESH_MS);
     if (this._hass) this._subscribe();
     void this._syncMap();
+  }
+
+  /** Load the configured provider's map code, once per provider and key. */
+  private _loadMap(): void {
+    const config = this._config;
+    if (!config) return;
+    const google = config.map_provider === "google";
+    const mapFor = google ? `google:${config.google_api_key}` : "home_assistant";
+    if (mapFor === this._mapFor) return;
+    this._mapFor = mapFor;
+    this._mapAvailable = null;
+    const load = google
+      ? loadGoogleMaps(config.google_api_key ?? "").then((maps) => {
+          this._googleMaps = maps;
+          return maps !== undefined;
+        })
+      : ensureHaMap();
+    void load.then((ok) => {
+      if (this._mapFor === mapFor) this._mapAvailable = ok;
+    });
   }
 
   disconnectedCallback(): void {
@@ -209,7 +241,7 @@ export class TeslaDriveTrackerCard extends LitElement {
     window.clearTimeout(this._resubscribe);
     this._stopFrames();
     this._unsubscribeFeed();
-    // The markers die with the engine `ha-map` tears down.
+    // The markers die with the engine `ha-map` tears down. A Google map stays.
     this._surface?.abandon();
     this._surface = undefined;
     this._artKey = "";
@@ -308,35 +340,11 @@ export class TeslaDriveTrackerCard extends LitElement {
       this._resync = true;
       return;
     }
-    const el = this._mapEl();
-    if (!el) return;
 
     this._syncing = true;
     try {
-      const engine = await whenEngineReady(el);
-      if (!engine) {
-        if (el._loaded) this._problem = "This Home Assistant's map has no drawing API. The card needs 2026.10 or later.";
-        return;
-      }
-      const problem = engineProblem(engine);
-      if (problem) {
-        this._problem = `${problem}, so this card can't draw on it.`;
-        return;
-      }
-      if (this._surface?.engine !== engine) {
-        this._surface?.abandon();
-        this._surface = new HaSurface(engine);
-        this._artKey = "";
-        this._fitKey = "";
-        engine.leafletMap?.on("zoomstart", () => this._pause());
-        engine.leafletMap?.on("viewreset", () => this._pause());
-        engine.leafletMap?.on("zoomend", () => (this._pausedUntil = 0));
-        this._surface.setZones(this._zones());
-        // `ha-map` fits itself when its `_loaded` flips. Waiting lets that happen
-        // first, so the view set below is the last word.
-        await el.updateComplete;
-      }
-      this._draw();
+      const ready = this._config?.map_provider === "google" ? this._syncGoogle() : await this._syncHaMap();
+      if (ready) this._draw();
     } finally {
       this._syncing = false;
       if (this._resync) {
@@ -344,6 +352,68 @@ export class TeslaDriveTrackerCard extends LitElement {
         void this._syncMap();
       }
     }
+  }
+
+  /** Make sure the surface draws on `ha-map`'s current engine. */
+  private async _syncHaMap(): Promise<boolean> {
+    const el = this._mapEl();
+    if (!el) return false;
+    const engine = await whenEngineReady(el);
+    if (!engine) {
+      if (el._loaded) this._problem = "This Home Assistant's map has no drawing API. The card needs 2026.10 or later.";
+      return false;
+    }
+    const problem = engineProblem(engine);
+    if (problem) {
+      this._problem = `${problem}, so this card can't draw on it.`;
+      return false;
+    }
+    if (!(this._surface instanceof HaSurface) || this._surface.engine !== engine) {
+      this._surface?.abandon();
+      this._surface = new HaSurface(engine);
+      this._artKey = "";
+      this._fitKey = "";
+      engine.leafletMap?.on("zoomstart", () => this._pause());
+      engine.leafletMap?.on("viewreset", () => this._pause());
+      engine.leafletMap?.on("zoomend", () => (this._pausedUntil = 0));
+      this._surface.setZones(this._zones());
+      // `ha-map` fits itself when its `_loaded` flips. Waiting lets that happen
+      // first, so the view set below is the last word.
+      await el.updateComplete;
+    }
+    return true;
+  }
+
+  /** Make sure there is a Google map in the rendered element, and a surface on it. */
+  private _syncGoogle(): boolean {
+    const host = this.renderRoot?.querySelector<HTMLElement>(".google-map");
+    const maps = this._googleMaps;
+    const config = this._config;
+    if (!host || !maps || !config) return false;
+    const options = {
+      mapType: config.google_map_type,
+      traffic: config.show_traffic,
+      dark: Boolean(this._hass?.themes?.darkMode),
+    };
+    // A new element means the old map went with the old one, e.g. after parking.
+    if (this._google?.host !== host) {
+      this._surface?.abandon();
+      this._surface = undefined;
+      this._google = new GoogleView(maps, host, options);
+    }
+    if (!(this._surface instanceof GoogleSurface)) {
+      this._surface?.abandon();
+      this._surface = new GoogleSurface(this._google, options);
+      this._artKey = "";
+      this._fitKey = "";
+      this._surface.setZones(this._zones());
+    }
+    return true;
+  }
+
+  /** The camera of whichever map is showing. */
+  private _view(): MapView | null {
+    return this._config?.map_provider === "google" ? (this._google ?? null) : this._mapEl();
   }
 
   private _pause(): void {
@@ -435,7 +505,7 @@ export class TeslaDriveTrackerCard extends LitElement {
 
   /** Move the view, unless the user has it or nothing calls for it. */
   private _syncView(): void {
-    const el = this._mapEl();
+    const el = this._view();
     const drive = this._drive;
     const config = this._config;
     if (!el || !this._surface || !drive || !config || drive.latitude === null || drive.longitude === null) return;
@@ -551,7 +621,11 @@ export class TeslaDriveTrackerCard extends LitElement {
     if (!config) return nothing;
     if (this._problem) return html`<ha-card><div class="message error">${this._problem}</div></ha-card>`;
     if (this._mapAvailable === false) {
-      return html`<ha-card><div class="message error">The map could not be loaded.</div></ha-card>`;
+      const why =
+        config.map_provider === "google"
+          ? "Google Maps could not be loaded. Check the google_api_key and that it allows this address."
+          : "The map could not be loaded.";
+      return html`<ha-card><div class="message error">${why}</div></ha-card>`;
     }
     const drive = this._drive;
     if (!drive || this._mapAvailable === null) return html`<ha-card><div class="message">Loading…</div></ha-card>`;
@@ -571,7 +645,9 @@ export class TeslaDriveTrackerCard extends LitElement {
         @pointerdown=${this._onUserMove}
         @wheel=${this._onUserMove}
       >
-        <ha-map .autoFit=${false} .themeMode=${"auto"}></ha-map>
+        ${config.map_provider === "google"
+          ? html`<div class="google-map"></div>`
+          : html`<ha-map .autoFit=${false} .themeMode=${"auto"}></ha-map>`}
         ${outside ? nothing : hud} ${this._renderStale(drive)}
         ${this._following
           ? nothing

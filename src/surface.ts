@@ -46,6 +46,15 @@ export interface MapSurface {
   abandon(): void;
 }
 
+/** The camera: what the card asks of `ha-map`, and of the Google map in its place. */
+export interface MapView {
+  /** `pad` is a fraction of the box added on each side; `zoom` is a ceiling. */
+  fitBounds(latlngs: LatLng[], options?: { pad?: number; zoom?: number }): void;
+  panTo(latlng: LatLng): void;
+  /** On Leaflet's zoom scale. */
+  getView(): { center: [number, number]; zoom: number } | undefined;
+}
+
 const PIN_SIZE: [number, number] = [28, 37];
 
 /** What a map must offer, so a future change shows an error, not an empty map. */
