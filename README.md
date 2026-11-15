@@ -63,9 +63,24 @@ to 15 seconds. After 30 seconds with no fix it says how old the last one is.
 |---|---|
 | Car | `model`, `color` (a Tesla paint name or hex), `roof`, `marker_style` (`car`, `arrow`, `dot`), `marker_size`, `image` and `image_nose` for your own picture |
 | Map | `follow` (`auto`, `car`, `fit`, `off`), `recenter_after`, `speed_zoom`, `height`, `show_zones`, `when_parked` (`map`, `compact`, `hide`), `smooth_motion` |
+| Google Maps | `map_provider` (`home_assistant`, `google`), `google_api_key`, `google_map_type` (`roadmap`, `satellite`, `hybrid`, `terrain`), `show_traffic` |
 | Lines | `show_route`, `route_color`, `show_trail`, `trail_color`, `trail_minutes` |
 | Info panel | `hud` (`full`, `compact`, `off`), `hud_fields`, `hud_position` (`below`, `above`, or over the map: `top`, `bottom`), `units` |
 | Other | `entry_id`, to choose a car when you have more than one |
+
+The map is Home Assistant's own unless `map_provider: google` is set. Google Maps
+needs your own [Maps JavaScript API](https://developers.google.com/maps/documentation/javascript/get-api-key)
+key, restricted to your Home Assistant's address, and each time the map is shown counts
+as a map load on that key. If another card on the dashboard has already loaded Google
+Maps, this card uses that copy and its key.
+
+```yaml
+type: custom:tesla-drive-tracker-card
+map_provider: google
+google_api_key: YOUR_KEY
+google_map_type: hybrid
+show_traffic: true
+```
 
 With `follow: auto`, the map stays close to a car that has nowhere set, and frames the
 car, route and destination when it does. A hidden destination is never framed.

@@ -16,6 +16,19 @@ export const cardStyles = css`
     height: 100%;
     width: 100%;
   }
+  /* Its own stacking context, so Google's layers stay under the panel and buttons. */
+  .google-map {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+  }
+  /* Google's markers are in this shadow root, unlike ha-map's. */
+  .tdt-car svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    overflow: visible;
+  }
   .hud {
     position: absolute;
     left: 8px;
