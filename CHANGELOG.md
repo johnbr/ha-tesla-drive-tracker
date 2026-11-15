@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.0](https://github.com/johnbr/ha-tesla-drive-tracker/compare/v0.1.3...v0.2.0) (2026-11-15)
+
+
+### Features
+
+* offer Google Maps as the map, with satellite and traffic ([#20](https://github.com/johnbr/ha-tesla-drive-tracker/issues/20)) ([1b912e4](https://github.com/johnbr/ha-tesla-drive-tracker/commit/1b912e4a097763f9074d2401be0361f508bbfc0a))
+
+
+### Bug Fixes
+
+* draw the car about 20% smaller by default ([#19](https://github.com/johnbr/ha-tesla-drive-tracker/issues/19)) ([67c2595](https://github.com/johnbr/ha-tesla-drive-tracker/commit/67c259563699755826f1e87aa6d955d2f3f3654b))
+
 ## [0.1.3](https://github.com/johnbr/ha-tesla-drive-tracker/compare/v0.1.2...v0.1.3) (2026-11-12)
 
 
