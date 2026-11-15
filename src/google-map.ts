@@ -18,8 +18,9 @@
  * 3. **Markers are `OverlayView`s holding elements we own**, not `Marker`s:
  *    moving one is a transform, so the car can glide every animation frame
  *    without rebuilding anything, and an SVG is drawn as it is. They go in the
- *    `overlayLayer` pane, which takes no pointer events, so a drag that starts
- *    on the car still pans the map.
+ *    `markerLayer` pane: like `overlayLayer` it takes no pointer events, so a
+ *    drag that starts on the car still pans the map, but it sits above the
+ *    lines, which `overlayLayer` doesn't -- the trail was drawn over the car.
  *
  * 4. **Zoom levels match Leaflet's**, which is the scale `ha-map` reports, so the
  *    card's speed zooms mean the same on both.
@@ -52,7 +53,7 @@ interface GMap {
 
 interface GOverlay {
   setMap(map: GMap | null): void;
-  getPanes(): { overlayLayer: HTMLElement } | null;
+  getPanes(): { markerLayer: HTMLElement } | null;
   getProjection(): { fromLatLngToDivPixel(latlng: GLatLngLiteral): { x: number; y: number } | null } | null;
 }
 
@@ -205,7 +206,7 @@ function overlayClass(maps: GoogleMaps): new (element: HTMLElement, anchor: [num
     }
 
     onAdd(): void {
-      this.getPanes()?.overlayLayer.append(this.element);
+      this.getPanes()?.markerLayer.append(this.element);
     }
 
     draw(): void {
