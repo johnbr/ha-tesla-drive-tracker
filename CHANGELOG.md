@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/johnbr/ha-tesla-drive-tracker/compare/v0.2.0...v0.2.1) (2026-11-15)
+
+
+### Bug Fixes
+
+* give the car a dark edge and a shadow so it stands out on the map ([#22](https://github.com/johnbr/ha-tesla-drive-tracker/issues/22)) ([c48a183](https://github.com/johnbr/ha-tesla-drive-tracker/commit/c48a1831b92911ae637987d94797cced8dbe088a))
+
 ## [0.2.0](https://github.com/johnbr/ha-tesla-drive-tracker/compare/v0.1.3...v0.2.0) (2026-11-15)
 
 
