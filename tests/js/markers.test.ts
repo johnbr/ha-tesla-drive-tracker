@@ -31,3 +31,12 @@ test("the drawings are well formed", () => {
     assert.ok(!svg.includes("NaN"));
   }
 });
+
+test("the car is outlined white inside a dark edge, over a shadow", () => {
+  const svg = carSvg("s", look);
+  const edge = svg.indexOf('fill="#0f0f0f"');
+  const rim = svg.indexOf('fill="#fff"');
+  const shadow = svg.indexOf('filter="url(#tdt-car-shadow)"');
+  assert.ok(shadow > 0 && shadow < edge && edge < rim);
+  assert.ok(svg.includes('<filter id="tdt-car-shadow"'));
+});
