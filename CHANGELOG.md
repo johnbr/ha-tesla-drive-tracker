@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/johnbr/ha-tesla-drive-tracker/compare/v0.2.1...v0.2.2) (2026-11-15)
+
+
+### Bug Fixes
+
+* draw the car above the route and trail on Google Maps ([#24](https://github.com/johnbr/ha-tesla-drive-tracker/issues/24)) ([9423101](https://github.com/johnbr/ha-tesla-drive-tracker/commit/9423101f5e25814ef2f652b753aef10610a26c75))
+
 ## [0.2.1](https://github.com/johnbr/ha-tesla-drive-tracker/compare/v0.2.0...v0.2.1) (2026-11-15)
 
 
