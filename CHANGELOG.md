@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/johnbr/ha-tesla-drive-tracker/compare/v0.2.3...v0.3.0) (2026-11-17)
+
+
+### Features
+
+* record drives to replay them against a change ([#28](https://github.com/johnbr/ha-tesla-drive-tracker/issues/28)) ([0ebf59b](https://github.com/johnbr/ha-tesla-drive-tracker/commit/0ebf59b3bee0ce30fcc91fe1aa5437b5c7e606b6))
+
 ## [0.2.3](https://github.com/johnbr/ha-tesla-drive-tracker/compare/v0.2.2...v0.2.3) (2026-11-17)
 
 
