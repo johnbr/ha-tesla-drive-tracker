@@ -107,7 +107,12 @@ export function predict(fix: Fix, route: LatLng[] | null, seconds: number): LatL
   const distance = speed * METRES_PER_SECOND_PER_MPH * Math.min(seconds, PREDICT_MAX_SECONDS);
   if (route && route.length > 1) {
     const near = nearestOnLine(route, fix.position, fix.heading);
-    if (near && near.off <= ON_ROUTE_METRES) return walkLine(route, near, distance);
+    if (near && near.off <= ON_ROUTE_METRES) {
+      // Kept as far off the line as the fix is: a car is in a lane, not on the
+      // line's centre, and snapping onto it flicks the car sideways each fix.
+      const along = walkLine(route, near, distance);
+      return [along[0] + fix.position[0] - near.at[0], along[1] + fix.position[1] - near.at[1]];
+    }
   }
   if (fix.heading === null) return fix.position;
   const heading = radians(fix.heading);

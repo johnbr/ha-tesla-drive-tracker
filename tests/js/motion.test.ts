@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { PREDICT_MAX_SECONDS, predict, turnTowards } from "../../src/geo.ts";
+import { PREDICT_MAX_SECONDS, predict, turnTowards, type LatLng } from "../../src/geo.ts";
 import { CORRECTION_MS, CarMotion } from "../../src/motion.ts";
 
 const motion = (smooth = true) => new CarMotion(predict, turnTowards, () => smooth, PREDICT_MAX_SECONDS);
@@ -73,4 +73,18 @@ test("the cap still counts from the last position", () => {
   car.update(fix(10), null, 0);
   car.carryOn({ speed: 61 }, 10000);
   assert.deepEqual(car.at(20000).position, car.at(30000).position);
+});
+
+test("a fix beside the route never flicks the car across it", () => {
+  const route: LatLng[] = [
+    [10, 20],
+    [10.02, 20],
+  ];
+  const car = motion();
+  car.update(fix(10), route, 0);
+  car.update({ position: [10.0008, 20.0001], heading: 0, speed: 60 }, route, 3000);
+  for (let now = 3000; now <= 3000 + CORRECTION_MS; now += 16) {
+    const east = car.at(now).position[1];
+    assert.ok(east > 20 - 1e-9 && east < 20.0001 + 1e-9, `drawn at ${east} at ${now} ms`);
+  }
 });
