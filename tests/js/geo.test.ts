@@ -37,6 +37,14 @@ test("a car on its route follows the route, not its heading", () => {
   assert.ok(Math.abs(ahead[1] - 20) < 1e-9);
 });
 
+test("a car beside its route keeps its distance from the line", () => {
+  const beside: LatLng = [10.001, 20.0001];
+  const ahead = predict({ position: beside, heading: 0, speed: 60 }, NORTH, 10);
+  assert.ok(ahead[0] > 10.001);
+  assert.ok(Math.abs(ahead[1] - 20.0001) < 1e-9);
+  assert.ok(metres(beside, predict({ position: beside, heading: 0, speed: 60 }, NORTH, 0.02)) < 1);
+});
+
 test("a car facing across its route is not slid along it", () => {
   const ahead = predict({ position: at(10.001), heading: 90, speed: 60 }, NORTH, 10);
   assert.ok(ahead[1] > 20);

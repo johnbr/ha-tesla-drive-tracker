@@ -5,15 +5,17 @@
  * this file stays runnable under `node --test`.
  *
  * A new fix rarely lands exactly where the car was predicted to be. Jumping there
- * would show every correction, so the gap is kept as an offset that fades over a
- * second while the prediction carries on from the fix. Each frame draws from the
+ * would show every correction, so the gap is kept as an offset that fades over two
+ * seconds while the prediction carries on from the fix. Fading for longer than the
+ * fixes are apart, when they come every second, evens out their GPS noise rather
+ * than chasing it from side to side. Each frame draws from the
  * clock, so a backgrounded tab comes back to the present rather than replaying
  * what it missed.
  */
 
 import type { Fix, LatLng } from "./geo";
 
-export const CORRECTION_MS = 1000;
+export const CORRECTION_MS = 2000;
 const TURN_MS = 400;
 
 type Predict = (fix: Fix, route: LatLng[] | null, seconds: number) => LatLng;
