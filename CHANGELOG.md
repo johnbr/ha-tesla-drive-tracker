@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/johnbr/ha-tesla-drive-tracker/compare/v0.2.2...v0.2.3) (2026-11-17)
+
+
+### Bug Fixes
+
+* keep the car in its lane instead of flicking it across the route ([#26](https://github.com/johnbr/ha-tesla-drive-tracker/issues/26)) ([2c3e90e](https://github.com/johnbr/ha-tesla-drive-tracker/commit/2c3e90e6f306ba95308cf1e6f532e63b7e94f041))
+
 ## [0.2.2](https://github.com/johnbr/ha-tesla-drive-tracker/compare/v0.2.1...v0.2.2) (2026-11-15)
 
 
