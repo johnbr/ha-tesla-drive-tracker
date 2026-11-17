@@ -14,6 +14,7 @@ from homeassistant.util.hass_dict import HassKey
 from .const import DOMAIN
 from .coordinator import DriveConfigEntry, DriveCoordinator, async_remove_storage
 from .frontend import async_register_card
+from .recording import async_remove_recordings
 from .websocket import async_setup_websocket
 
 PLATFORMS = [
@@ -68,6 +69,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: DriveConfigEntry) -> bo
 
 
 async def async_remove_entry(hass: HomeAssistant, entry: DriveConfigEntry) -> None:
-    """Delete the car's trail and trip memory."""
+    """Delete the car's trail, trip memory and recordings."""
     await async_remove_storage(hass, entry.entry_id)
+    await async_remove_recordings(hass, entry.entry_id)
     ir.async_delete_issue(hass, DOMAIN, f"no_sources_{entry.entry_id}")

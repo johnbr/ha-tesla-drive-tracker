@@ -8,6 +8,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 
 from custom_components.tesla_drive_tracker.const import (
+    CONF_RECORD_DAYS,
+    CONF_RECORD_DRIVES,
     CONF_ROLES,
     CONF_THRESHOLDS,
     CONF_VIN,
@@ -65,7 +67,23 @@ async def test_options_are_saved(hass: HomeAssistant, car: Car) -> None:
     assert result["data"] == {
         CONF_THRESHOLDS: [10.0, 5.0],
         CONF_ROLES: {"arrival": "sensor.waze"},
+        CONF_RECORD_DRIVES: False,
+        CONF_RECORD_DAYS: 7,
     }
+    await hass.async_block_till_done()
+    await car.stop()
+
+
+async def test_recording_is_saved(hass: HomeAssistant, car: Car) -> None:
+    await car.start()
+    result = await hass.config_entries.options.async_init(car.entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        {CONF_THRESHOLDS: ["5"], CONF_RECORD_DRIVES: True, CONF_RECORD_DAYS: 14.0},
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"][CONF_RECORD_DRIVES] is True
+    assert result["data"][CONF_RECORD_DAYS] == 14
     await hass.async_block_till_done()
     await car.stop()
 

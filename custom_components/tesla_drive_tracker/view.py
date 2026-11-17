@@ -57,6 +57,11 @@ class DriveView:
         return {item.name: getattr(self, item.name) for item in fields(self)}
 
 
+def changed(old: dict[str, Any], new: dict[str, Any]) -> dict[str, Any]:
+    """What differs in ``new`` from ``old``, as a card is sent it."""
+    return {key: value for key, value in new.items() if value != old.get(key)}
+
+
 def build_view(
     engine: TripEngine,
     *,

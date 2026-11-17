@@ -35,13 +35,17 @@
           "odometer": "Odometer",
           "online": "Online",
           "car_model": "Model",
-          "car_color": "Paint"
+          "car_color": "Paint",
+          "record_drives": "Record drives for debugging",
+          "record_days": "Days to keep recordings"
         },
         "data_description": {
           "arrival_thresholds": "How long before arrival a drive counts as arriving. Each is between 0 and 120 minutes.",
           "arrival": "The car's arrival time, or any sensor giving a timestamp or minutes.",
           "car_model": "Which drawing the card uses. Leave empty to work it out from the car.",
-          "car_color": "A hex colour such as #6d7276, or one of Tesla's paint names. Leave empty to use what the car reports."
+          "car_color": "A hex colour such as #6d7276, or one of Tesla's paint names. Leave empty to use what the car reports.",
+          "record_drives": "Saves what the card is sent, including where the car goes, under tesla_drive_tracker/recordings in the configuration folder, which backups include.",
+          "record_days": "Older recordings are deleted, even after recording is turned off."
         }
       }
     },

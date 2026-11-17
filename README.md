@@ -101,6 +101,26 @@ heading home, so the card never receives them. Arrival time stays, because when 
 This is display privacy, not access control. Anyone logged in to Home Assistant can
 still read the source entities.
 
+## Recording drives
+
+To look into how the card moves the car, turn on **Record drives for debugging** in
+the integration's options. Everything the card is sent is then saved, one gzipped
+file a day, under `tesla_drive_tracker/recordings/<entry id>/` in the configuration
+folder. That includes where the car goes, though a hidden destination is never
+saved. Files older than **Days to keep recordings**, 7 by default, are deleted even
+after recording is turned off, and removing the car deletes them all. Backups
+include whatever is there.
+
+From a checkout of this repository, replay recordings through the card's motion to
+see how far off its predictions were and how much it drew the car moving sideways:
+
+```sh
+npm run replay -- 2026-11-16.jsonl.gz
+```
+
+`--src <folder>` replays with another copy of the card's `src`, such as a worktree
+of `main`, to compare a change with it.
+
 ## Requirements
 
 * Home Assistant 2026.10.0 or later
