@@ -6,3 +6,6 @@ __pycache__/
 node_modules/
 .rollup.cache/
 *.tsbuildinfo
+# Drive recordings hold where a car went.
+*.jsonl
+*.jsonl.gz

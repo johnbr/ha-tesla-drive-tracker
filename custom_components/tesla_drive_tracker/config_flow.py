@@ -16,10 +16,14 @@ from homeassistant.helpers import selector
 from .const import (
     CONF_CAR_COLOR,
     CONF_CAR_MODEL,
+    CONF_RECORD_DAYS,
+    CONF_RECORD_DRIVES,
     CONF_ROLES,
     CONF_THRESHOLDS,
     CONF_VIN,
+    DEFAULT_RECORD_DAYS,
     DOMAIN,
+    MAX_RECORD_DAYS,
 )
 from .coordinator import DriveConfigEntry
 from .engine import DEFAULT_THRESHOLDS
@@ -103,7 +107,7 @@ class DriveTrackerConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class DriveTrackerOptionsFlow(OptionsFlowWithReload):
-    """Arrival thresholds, and a source of your own for any role."""
+    """Arrival thresholds, a source of your own for any role, and recording."""
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
@@ -125,7 +129,13 @@ class DriveTrackerOptionsFlow(OptionsFlowWithReload):
                     if user_input.get(key)
                 }
                 return self.async_create_entry(
-                    data={CONF_THRESHOLDS: thresholds, CONF_ROLES: roles, **look}
+                    data={
+                        CONF_THRESHOLDS: thresholds,
+                        CONF_ROLES: roles,
+                        **look,
+                        CONF_RECORD_DRIVES: user_input[CONF_RECORD_DRIVES],
+                        CONF_RECORD_DAYS: int(user_input[CONF_RECORD_DAYS]),
+                    }
                 )
 
         options = self.config_entry.options
@@ -169,6 +179,25 @@ class DriveTrackerOptionsFlow(OptionsFlowWithReload):
                 if domain
                 else selector.EntitySelectorConfig()
             )
+        schema[
+            probatio.Required(
+                CONF_RECORD_DRIVES, default=options.get(CONF_RECORD_DRIVES, False)
+            )
+        ] = selector.BooleanSelector()
+        schema[
+            probatio.Required(
+                CONF_RECORD_DAYS,
+                default=options.get(CONF_RECORD_DAYS, DEFAULT_RECORD_DAYS),
+            )
+        ] = selector.NumberSelector(
+            selector.NumberSelectorConfig(
+                min=1,
+                max=MAX_RECORD_DAYS,
+                step=1,
+                mode=selector.NumberSelectorMode.BOX,
+                unit_of_measurement="days",
+            )
+        )
         return self.async_show_form(
             step_id="init", data_schema=probatio.Schema(schema), errors=errors
         )

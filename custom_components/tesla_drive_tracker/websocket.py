@@ -16,6 +16,7 @@ from homeassistant.core import HomeAssistant, callback
 
 from .const import DOMAIN
 from .coordinator import DriveCoordinator
+from .view import changed
 
 
 @callback
@@ -40,10 +41,6 @@ def ws_cars(
             for entry in hass.config_entries.async_loaded_entries(DOMAIN)
         ],
     )
-
-
-def _changes(old: dict[str, Any], new: dict[str, Any]) -> dict[str, Any]:
-    return {key: value for key, value in new.items() if value != old.get(key)}
 
 
 @websocket_api.websocket_command(
@@ -80,10 +77,10 @@ def ws_subscribe(
     def on_update() -> None:
         nonlocal sent
         current = coordinator.data.as_wire()
-        changed = _changes(sent, current)
-        if changed:
+        changes = changed(sent, current)
+        if changes:
             sent = current
-            send({"type": "delta", **changed})
+            send({"type": "delta", **changes})
 
     @callback
     def on_close() -> None:

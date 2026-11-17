@@ -23,7 +23,10 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.debounce import Debouncer
-from homeassistant.helpers.event import async_track_state_change_event
+from homeassistant.helpers.event import (
+    async_track_state_change_event,
+    async_track_time_interval,
+)
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_util
@@ -32,11 +35,15 @@ from homeassistant.util.unit_conversion import DistanceConverter, SpeedConverter
 from .const import (
     CONF_CAR_COLOR,
     CONF_CAR_MODEL,
+    CONF_RECORD_DAYS,
+    CONF_RECORD_DRIVES,
     CONF_ROLES,
     CONF_THRESHOLDS,
     CONF_VIN,
+    DEFAULT_RECORD_DAYS,
     DOMAIN,
     LOGGER,
+    RECORD_FLUSH_SECONDS,
     RESOLVE_COOLDOWN_SECONDS,
     SAVE_EVERY_SECONDS,
     STORAGE_VERSION,
@@ -57,6 +64,7 @@ from .pairing import (
 )
 from .privacy import is_hidden, redact_event
 from .reading import build_reading, car_model, number, stream_silent
+from .recording import DriveRecording, recordings_folder
 from .resolver import PLATFORMS, Sources, find_device_model, find_sources
 from .route_line import RouteLine, parse_route_line
 from .sources import (
@@ -147,6 +155,12 @@ class DriveCoordinator(DataUpdateCoordinator[DriveView]):
         self._engine = TripEngine(self._thresholds)
         self._pairing = DestinationPairing()
         self._store = _store(hass, entry.entry_id)
+        self._recording = DriveRecording(
+            hass,
+            recordings_folder(hass, entry.entry_id),
+            on=entry.options.get(CONF_RECORD_DRIVES, False),
+            days=entry.options.get(CONF_RECORD_DAYS, DEFAULT_RECORD_DAYS),
+        )
         self._saved_at = 0.0
         self._event_listeners: list[EventListener] = []
         self._device_model: str | None = None
@@ -189,6 +203,13 @@ class DriveCoordinator(DataUpdateCoordinator[DriveView]):
             )
         )
         self.config_entry.async_on_unload(self._resolver.async_shutdown)
+        self.config_entry.async_on_unload(
+            async_track_time_interval(
+                self.hass,
+                self._recording.async_flush,
+                timedelta(seconds=RECORD_FLUSH_SECONDS),
+            )
+        )
 
     async def _async_update_data(self) -> DriveView:
         return self._compute()
@@ -349,6 +370,7 @@ class DriveCoordinator(DataUpdateCoordinator[DriveView]):
             **self._look(now),
         )
         self._save_later(now, bool(events))
+        self._recording.add(view, now)
         return view
 
     def _travelled(self) -> float | None:
@@ -413,6 +435,7 @@ class DriveCoordinator(DataUpdateCoordinator[DriveView]):
     async def async_save(self) -> None:
         """Write everything now, for an unload."""
         await self._store.async_save(self._stored())
+        await self._recording.async_flush()
 
     @callback
     def async_close_subscribers(self) -> None:

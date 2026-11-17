@@ -8,7 +8,8 @@
     "build": "rollup -c",
     "watch": "rollup -c -w",
     "typecheck": "tsc --noEmit",
-    "test:js": "TZ=UTC node --test tests/js/*.test.ts"
+    "test:js": "TZ=UTC node --test tests/js/*.test.ts",
+    "replay": "node scripts/replay.ts"
   },
   "author": "John Briscoe",
   "license": "MIT",
