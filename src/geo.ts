@@ -15,11 +15,20 @@
  * heading from about 10 s, and past 15 s one prediction in ten is over 200 m out,
  * which is the cap. A moving car reports within 7 s 99.9% of the time, so the cap
  * is rarely reached.
+ *
+ * With a fix every 2 s, though, replaying four days of recorded drives drew the
+ * car closer to where it really was along its heading than along its route (90%
+ * of frames within 4.7 px rather than 5.3 px, at the card's speed zoom), and more
+ * than 15 degrees off its nose a quarter as often: a route's corners and lanes
+ * are not quite the car's. So the heading leads until a position is
+ * ROUTE_AFTER_SECONDS overdue, and the route takes over from there.
  */
 
 export type LatLng = [number, number];
 
 export const PREDICT_MAX_SECONDS = 15;
+/** How long after a position the heading still predicts the car better than its route. */
+export const ROUTE_AFTER_SECONDS = 5;
 /** Below this a car is stopped or creeping, and predicting only adds jitter. */
 export const PREDICT_MIN_MPH = 2;
 /** Further than this from its line, the car has left the route. */
@@ -98,15 +107,39 @@ export interface Fix {
   position: LatLng;
   heading: number | null;
   speed: number | null;
+  /** Miles an hour a braking car is losing each second; it is predicted to stop, not run on. */
+  slowing?: number;
+}
+
+/** Metres covered in `seconds` from `speed`, braking to a stop if it is slowing. */
+function travelled(speed: number, slowing: number, seconds: number): number {
+  if (slowing <= 0) return speed * seconds * METRES_PER_SECOND_PER_MPH;
+  const moving = Math.min(seconds, speed / slowing);
+  return (speed * moving - (slowing * moving * moving) / 2) * METRES_PER_SECOND_PER_MPH;
+}
+
+/**
+ * Where each fix is on the route, found once rather than on every frame: a route
+ * can run to thousands of points, and the car is drawn from the same fix and
+ * route until the next signal.
+ */
+const onRoute = new WeakMap<Fix, { route: LatLng[]; near: ReturnType<typeof nearestOnLine> }>();
+
+function nearestOnRoute(fix: Fix, route: LatLng[]): ReturnType<typeof nearestOnLine> {
+  const known = onRoute.get(fix);
+  if (known?.route === route) return known.near;
+  const near = nearestOnLine(route, fix.position, fix.heading);
+  onRoute.set(fix, { route, near });
+  return near;
 }
 
 /** Where a car is `seconds` after a fix, following its route when it is on one. */
 export function predict(fix: Fix, route: LatLng[] | null, seconds: number): LatLng {
   const speed = fix.speed ?? 0;
   if (speed < PREDICT_MIN_MPH || seconds <= 0) return fix.position;
-  const distance = speed * METRES_PER_SECOND_PER_MPH * Math.min(seconds, PREDICT_MAX_SECONDS);
+  const distance = travelled(speed, fix.slowing ?? 0, Math.min(seconds, PREDICT_MAX_SECONDS));
   if (route && route.length > 1) {
-    const near = nearestOnLine(route, fix.position, fix.heading);
+    const near = nearestOnRoute(fix, route);
     if (near && near.off <= ON_ROUTE_METRES) {
       // Kept as far off the line as the fix is: a car is in a lane, not on the
       // line's centre, and snapping onto it flicks the car sideways each fix.

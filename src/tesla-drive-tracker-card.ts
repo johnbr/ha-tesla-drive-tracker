@@ -22,7 +22,17 @@ import {
   unitFor,
   type DistanceUnit,
 } from "./format";
-import { PREDICT_MAX_SECONDS, predict, routeAhead, turnTowards, type LatLng } from "./geo";
+import {
+  PREDICT_MAX_SECONDS,
+  PREDICT_MIN_MPH,
+  ROUTE_AFTER_SECONDS,
+  bearing,
+  metres,
+  predict,
+  routeAhead,
+  turnTowards,
+  type LatLng,
+} from "./geo";
 import { arrowSvg, carSvg, destinationSvg, dotSvg } from "./markers";
 import { CarMotion } from "./motion";
 import { outlineColor, paintColor, roofColor } from "./paint";
@@ -155,7 +165,10 @@ export class TeslaDriveTrackerCard extends LitElement {
   private _fitAt = 0;
   private _lastRoute: LatLng[] | null = null;
   private _reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)");
-  private _motion = new CarMotion(predict, turnTowards, () => this._smooth(), PREDICT_MAX_SECONDS);
+  private _motion = new CarMotion(
+    { predict, turnTowards, metres, bearing, PREDICT_MAX_SECONDS, PREDICT_MIN_MPH, ROUTE_AFTER_SECONDS },
+    () => this._smooth()
+  );
 
   set hass(hass: HomeAssistant) {
     const first = !this._hass;

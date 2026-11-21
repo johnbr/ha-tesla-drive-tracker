@@ -56,8 +56,9 @@ type: custom:tesla-drive-tracker-card
 ```
 
 It draws on Home Assistant's own map, so it needs no API key and follows your theme.
-Between fixes it predicts where the car is, along the route when there is one, for up
-to 15 seconds. After 30 seconds with no fix it says how old the last one is.
+Between fixes it predicts where the car is, along its heading and then, once a fix is
+5 seconds overdue, along the route when there is one, for up to 15 seconds. After 30
+seconds with no fix it says how old the last one is.
 
 | Group | Options |
 |---|---|
