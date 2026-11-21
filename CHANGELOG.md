@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/johnbr/ha-tesla-drive-tracker/compare/v0.3.0...v0.3.1) (2026-11-21)
+
+
+### Bug Fixes
+
+* stop the car sliding, mostly backing up as it stops ([#31](https://github.com/johnbr/ha-tesla-drive-tracker/issues/31)) ([5480edc](https://github.com/johnbr/ha-tesla-drive-tracker/commit/5480edc1bf1126d65bf417f2247fcf27937a4358))
+
 ## [0.3.0](https://github.com/johnbr/ha-tesla-drive-tracker/compare/v0.2.3...v0.3.0) (2026-11-17)
 
 
