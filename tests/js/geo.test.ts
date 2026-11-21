@@ -56,6 +56,13 @@ test("a car that has left its route falls back on its heading", () => {
   assert.ok(ahead[1] > 20.01);
 });
 
+test("a braking car is predicted to stop, not run on", () => {
+  const fix = { position: at(10), heading: 0, speed: 10, slowing: 5 };
+  // 10 mph losing 5 mph a second stops after 2 s, having averaged 5 mph.
+  assert.ok(Math.abs(metres(at(10), predict(fix, null, 2)) - 10 * 0.44704) < 0.01);
+  assert.deepEqual(predict(fix, null, 2), predict(fix, null, 10));
+});
+
 test("prediction stops at the cap", () => {
   const fix = { position: at(10), heading: 0, speed: 60 };
   assert.deepEqual(predict(fix, null, PREDICT_MAX_SECONDS), predict(fix, null, 500));

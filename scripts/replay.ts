@@ -70,7 +70,11 @@ function step(a: [number, number], b: [number, number]): [number, number] {
   return [geo.metres(a, [a[0], b[1]]) * Math.sign(b[1] - a[1]), geo.metres(a, [b[0], a[1]]) * Math.sign(b[0] - a[0])];
 }
 
-const motion: Motion = new CarMotion(geo.predict, geo.turnTowards, () => true, geo.PREDICT_MAX_SECONDS);
+// Before the motion took the geometry whole, it took its parts.
+const motion: Motion =
+  CarMotion.length > 2
+    ? new CarMotion(geo.predict, geo.turnTowards, () => true, geo.PREDICT_MAX_SECONDS)
+    : new CarMotion(geo, () => true);
 const trips = new Map<number, Trip>();
 let drive: DriveState | null = null;
 let lastFix: number | null = null;
